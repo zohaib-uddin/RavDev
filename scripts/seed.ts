@@ -532,6 +532,361 @@ async function seed() {
 
   console.log('✅ Admin user created (admin@ravenza.pk / admin123)\n');
 
+  // ==================== CUSTOMER USERS ====================
+  console.log('👥 Creating customer users...');
+
+  const customers = [
+    { email: 'ahmed.khan@gmail.com', name: 'Ahmed Khan', phone: '+923001234567' },
+    { email: 'sara.ali@gmail.com', name: 'Sara Ali', phone: '+923002345678' },
+    { email: 'bilal.hassan@gmail.com', name: 'Bilal Hassan', phone: '+923003456789' },
+    { email: 'fatima.zahra@gmail.com', name: 'Fatima Zahra', phone: '+923004567890' },
+    { email: 'hamza.sheikh@gmail.com', name: 'Hamza Sheikh', phone: '+923005678901' },
+  ];
+
+  for (const customer of customers) {
+    await sql`
+      INSERT INTO users (email, name, phone, role, is_verified, is_active, password)
+      VALUES (${customer.email}, ${customer.name}, ${customer.phone}, 'customer', true, true, 'customer123')
+      ON CONFLICT (email) DO NOTHING
+    `;
+  }
+
+  const userCount = await sql`SELECT COUNT(*) as count FROM users`;
+  console.log(`✅ Created ${userCount[0].count} users\n`);
+
+  // ==================== COLLECTION PRODUCTS ====================
+  console.log('🔗 Linking products to collections...');
+
+  const allProducts = await sql`SELECT id, slug FROM products`;
+  const allCollections = await sql`SELECT id, slug FROM collections`;
+  
+  const collectionMap = new Map(allCollections.map((c: any) => [c.slug, c.id]));
+  
+  // Winter Essentials collection
+  const winterCollectionId = collectionMap.get('winter-essentials');
+  if (winterCollectionId) {
+    const winterProducts = allProducts.filter((p: any) => 
+      p.slug.includes('co-ord') || p.slug.includes('hoodie')
+    );
+    
+    for (let i = 0; i < winterProducts.length; i++) {
+      await sql`
+        INSERT INTO collection_products (collection_id, product_id, sort_order, is_active)
+        VALUES (${winterCollectionId}, ${winterProducts[i].id}, ${i}, true)
+        ON CONFLICT (collection_id, product_id) DO NOTHING
+      `;
+    }
+  }
+
+  // Streetwear Classics collection
+  const streetwearCollectionId = collectionMap.get('streetwear-classics');
+  if (streetwearCollectionId) {
+    const streetwearProducts = allProducts.filter((p: any) => 
+      p.slug.includes('tee') || p.slug.includes('trouser') || p.slug.includes('jacket')
+    );
+    
+    for (let i = 0; i < streetwearProducts.length; i++) {
+      await sql`
+        INSERT INTO collection_products (collection_id, product_id, sort_order, is_active)
+        VALUES (${streetwearCollectionId}, ${streetwearProducts[i].id}, ${i}, true)
+        ON CONFLICT (collection_id, product_id) DO NOTHING
+      `;
+    }
+  }
+
+  // New Arrivals collection
+  const newArrivalsCollectionId = collectionMap.get('new-arrivals');
+  if (newArrivalsCollectionId) {
+    const newProducts = allProducts.filter((p: any) => 
+      p.slug.includes('shadow') || p.slug.includes('midnight') || p.slug.includes('reaper') || p.slug.includes('acid') || p.slug.includes('neon')
+    );
+    
+    for (let i = 0; i < newProducts.length; i++) {
+      await sql`
+        INSERT INTO collection_products (collection_id, product_id, sort_order, is_active)
+        VALUES (${newArrivalsCollectionId}, ${newProducts[i].id}, ${i}, true)
+        ON CONFLICT (collection_id, product_id) DO NOTHING
+      `;
+    }
+  }
+
+  const collectionProductCount = await sql`SELECT COUNT(*) as count FROM collection_products`;
+  console.log(`✅ Linked ${collectionProductCount[0].count} products to collections\n`);
+
+  // ==================== REVIEWS ====================
+  console.log('⭐ Creating product reviews...');
+
+  const customerUsers = await sql`SELECT id, name FROM users WHERE role = 'customer'`;
+  
+  const reviews = [
+    { product_slug: 'shadow-realm-co-ord-set', rating: 5, comment: 'Amazing quality! The fabric is so soft and the fit is perfect. Best co-ord set I own.' },
+    { product_slug: 'acid-wash-phantom-tee', rating: 5, comment: 'Love the acid wash effect. Looks exactly like the photos. Will order more!' },
+    { product_slug: 'wide-leg-graphic-trouser', rating: 5, comment: 'Best wide leg trousers I have ever owned. Premium quality and amazing graphics.' },
+    { product_slug: 'reaper-x-graphic-co-ord', rating: 5, comment: 'The reaper graphic is insane! Got so many compliments. Ravenza never disappoints.' },
+    { product_slug: 'classic-pullover-hoodie', rating: 4, comment: 'Very comfortable hoodie. Warm and perfect for winter. Size runs a bit large.' },
+    { product_slug: 'denim-jacket-raven-black', rating: 5, comment: 'Beautiful denim jacket. Fits perfectly and the quality is amazing. Worth every rupee.' },
+    { product_slug: 'urban-drift-trackpants', rating: 4, comment: 'Super comfortable trackpants. Great for casual wear. Fabric quality is top notch.' },
+    { product_slug: 'midnight-vortex-co-ord', rating: 5, comment: 'This co-ord set is fire! The puff print details are incredible. Limited edition vibes.' },
+  ];
+
+  for (let i = 0; i < reviews.length; i++) {
+    const review = reviews[i];
+    const product = await sql`SELECT id FROM products WHERE slug = ${review.product_slug}`;
+    const customer = customerUsers[i % customerUsers.length];
+    
+    if (product.length > 0 && customer) {
+      await sql`
+        INSERT INTO reviews (user_id, product_id, rating, comment, is_approved)
+        VALUES (${customer.id}, ${product[0].id}, ${review.rating}, ${review.comment}, true)
+      `;
+    }
+  }
+
+  const reviewCount = await sql`SELECT COUNT(*) as count FROM reviews`;
+  console.log(`✅ Created ${reviewCount[0].count} reviews\n`);
+
+  // ==================== NEWSLETTER SUBSCRIBERS ====================
+  console.log('📧 Creating newsletter subscribers...');
+
+  const subscribers = [
+    'ahmed.khan@gmail.com',
+    'sara.ali@gmail.com',
+    'bilal.hassan@gmail.com',
+    'fatima.zahra@gmail.com',
+    'hamza.sheikh@gmail.com',
+    'usman.malik@gmail.com',
+    'ayesha.tariq@gmail.com',
+    'zain.ali@gmail.com',
+  ];
+
+  for (const email of subscribers) {
+    await sql`
+      INSERT INTO newsletter_subscribers (email, is_active)
+      VALUES (${email}, true)
+      ON CONFLICT (email) DO NOTHING
+    `;
+  }
+
+  const subscriberCount = await sql`SELECT COUNT(*) as count FROM newsletter_subscribers`;
+  console.log(`✅ Created ${subscriberCount[0].count} newsletter subscribers\n`);
+
+  // ==================== ORDERS ====================
+  console.log('📦 Creating sample orders...');
+
+  const orderCustomers = await sql`SELECT id FROM users WHERE role = 'customer' LIMIT 5`;
+  
+  const orders = [
+    {
+      customer_id: orderCustomers[0]?.id,
+      order_number: 'RVZ-000001',
+      status: 'delivered',
+      subtotal: 8490,
+      shipping_cost: 0,
+      total: 8490,
+      shipping_address: { firstName: 'Ahmed', lastName: 'Khan', phone: '+923001234567', address: '123 Main Boulevard', city: 'Lahore', postalCode: '54000' },
+      notes: 'Please deliver in the evening',
+      discount_code: null,
+      discount_amount: 0,
+      tracking_number: 'TRK123456789',
+      email_status: 'sent',
+    },
+    {
+      customer_id: orderCustomers[1]?.id,
+      order_number: 'RVZ-000002',
+      status: 'shipped',
+      subtotal: 5290,
+      shipping_cost: 200,
+      total: 5490,
+      shipping_address: { firstName: 'Sara', lastName: 'Ali', phone: '+923002345678', address: '456 Garden Town', city: 'Karachi', postalCode: '74000' },
+      notes: null,
+      discount_code: 'WELCOME10',
+      discount_amount: 529,
+      tracking_number: 'TRK987654321',
+      email_status: 'sent',
+    },
+    {
+      customer_id: orderCustomers[2]?.id,
+      order_number: 'RVZ-000003',
+      status: 'processing',
+      subtotal: 3200,
+      shipping_cost: 200,
+      total: 3400,
+      shipping_address: { firstName: 'Bilal', lastName: 'Hassan', phone: '+923003456789', address: '789 DHA Phase 5', city: 'Islamabad', postalCode: '44000' },
+      notes: 'Gift wrap please',
+      discount_code: null,
+      discount_amount: 0,
+      tracking_number: null,
+      email_status: 'pending',
+    },
+    {
+      customer_id: orderCustomers[3]?.id,
+      order_number: 'RVZ-000004',
+      status: 'confirmed',
+      subtotal: 4800,
+      shipping_cost: 0,
+      total: 4800,
+      shipping_address: { firstName: 'Fatima', lastName: 'Zahra', phone: '+923004567890', address: '321 Model Town', city: 'Lahore', postalCode: '54700' },
+      notes: null,
+      discount_code: null,
+      discount_amount: 0,
+      tracking_number: null,
+      email_status: 'sent',
+    },
+    {
+      customer_id: orderCustomers[4]?.id,
+      order_number: 'RVZ-000005',
+      status: 'pending_verification',
+      subtotal: 2500,
+      shipping_cost: 200,
+      total: 2700,
+      shipping_address: { firstName: 'Hamza', lastName: 'Sheikh', phone: '+923005678901', address: '654 Johar Town', city: 'Lahore', postalCode: '54000' },
+      notes: 'Call before delivery',
+      discount_code: null,
+      discount_amount: 0,
+      tracking_number: null,
+      email_status: 'pending',
+    },
+  ];
+
+  for (const order of orders) {
+    if (order.customer_id) {
+      const result = await sql`
+        INSERT INTO orders (
+          order_number, user_id, status, subtotal, shipping_cost, total,
+          shipping_address, notes, discount_code, discount_amount,
+          tracking_number, email_status, timeline
+        ) VALUES (
+          ${order.order_number}, ${order.customer_id}, ${order.status},
+          ${order.subtotal}, ${order.shipping_cost}, ${order.total},
+          ${JSON.stringify(order.shipping_address)}, ${order.notes},
+          ${order.discount_code}, ${order.discount_amount},
+          ${order.tracking_number}, ${order.email_status},
+          ${JSON.stringify([
+            { status: 'Order Placed', date: new Date().toISOString(), completed: true }
+          ])}
+        )
+        RETURNING id
+      `;
+
+      const orderId = result[0].id;
+
+      // Add order items
+      const randomProducts = allProducts.slice(0, Math.floor(Math.random() * 3) + 1);
+      
+      for (const product of randomProducts) {
+        const productData = await sql`SELECT * FROM products WHERE id = ${product.id}`;
+        const p = productData[0];
+        
+        await sql`
+          INSERT INTO order_items (
+            order_id, product_id, product_name, quantity, unit_price,
+            total_price, sku, size, color
+          ) VALUES (
+            ${orderId}, ${p.id}, ${p.name}, 1, ${p.base_price},
+            ${p.base_price}, ${p.sku}, 'M', 'Black'
+          )
+        `;
+      }
+    }
+  }
+
+  const orderCount = await sql`SELECT COUNT(*) as count FROM orders`;
+  const orderItemCount = await sql`SELECT COUNT(*) as count FROM order_items`;
+  console.log(`✅ Created ${orderCount[0].count} orders with ${orderItemCount[0].count} items\n`);
+
+  // ==================== DISCOUNTS ====================
+  console.log('🎟️ Creating discount codes...');
+
+  const discounts = [
+    {
+      code: 'WELCOME10',
+      type: 'percentage',
+      value: 10,
+      min_purchase: 2000,
+      max_uses: 100,
+      used_count: 15,
+      starts_at: new Date('2024-01-01'),
+      ends_at: new Date('2024-12-31'),
+    },
+    {
+      code: 'FLAT500',
+      type: 'fixed',
+      value: 500,
+      min_purchase: 3000,
+      max_uses: 50,
+      used_count: 23,
+      starts_at: new Date('2024-01-01'),
+      ends_at: new Date('2024-06-30'),
+    },
+    {
+      code: 'SUMMER25',
+      type: 'percentage',
+      value: 25,
+      min_purchase: 5000,
+      max_uses: 200,
+      used_count: 0,
+      starts_at: new Date('2024-06-01'),
+      ends_at: new Date('2024-08-31'),
+    },
+    {
+      code: 'NEWYEAR30',
+      type: 'percentage',
+      value: 30,
+      min_purchase: 4000,
+      max_uses: 150,
+      used_count: 45,
+      starts_at: new Date('2024-01-01'),
+      ends_at: new Date('2024-01-31'),
+    },
+  ];
+
+  for (const discount of discounts) {
+    await sql`
+      INSERT INTO discounts (
+        code, type, value, min_purchase, max_uses, used_count,
+        starts_at, ends_at, is_active, rules
+      ) VALUES (
+        ${discount.code}, ${discount.type}, ${discount.value},
+        ${discount.min_purchase}, ${discount.max_uses}, ${discount.used_count},
+        ${discount.starts_at}, ${discount.ends_at}, true,
+        ${JSON.stringify({ apply_to: 'all' })}
+      )
+      ON CONFLICT (code) DO NOTHING
+    `;
+  }
+
+  const discountCount = await sql`SELECT COUNT(*) as count FROM discounts`;
+  console.log(`✅ Created ${discountCount[0].count} discount codes\n`);
+
+  // ==================== AUDIT LOGS ====================
+  console.log('📝 Creating audit logs...');
+
+  const auditLogs = [
+    { entity_type: 'product', entity_id: allProducts[0]?.id || '1', action: 'created', performed_by: 'admin@ravenza.pk' },
+    { entity_type: 'product', entity_id: allProducts[1]?.id || '2', action: 'created', performed_by: 'admin@ravenza.pk' },
+    { entity_type: 'order', entity_id: '1', action: 'status_changed', performed_by: 'admin@ravenza.pk' },
+    { entity_type: 'user', entity_id: orderCustomers[0]?.id || '1', action: 'registered', performed_by: 'system' },
+    { entity_type: 'category', entity_id: '1', action: 'created', performed_by: 'admin@ravenza.pk' },
+  ];
+
+  for (const log of auditLogs) {
+    if (log.entity_id) {
+      await sql`
+        INSERT INTO audit_logs (
+          entity_type, entity_id, action, performed_by,
+          changes, ip_address, user_agent
+        ) VALUES (
+          ${log.entity_type}, ${log.entity_id}, ${log.action}, ${log.performed_by},
+          ${JSON.stringify({ timestamp: new Date().toISOString() })},
+          '192.168.1.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+        )
+      `;
+    }
+  }
+
+  const auditCount = await sql`SELECT COUNT(*) as count FROM audit_logs`;
+  console.log(`✅ Created ${auditCount[0].count} audit logs\n`);
+
   // ==================== SUMMARY ====================
   console.log('═══════════════════════════════════════');
   console.log('✅ DATABASE SEEDING COMPLETE!');
@@ -540,9 +895,16 @@ async function seed() {
   console.log(`   • Categories: ${allCategories.length}`);
   console.log(`   • Products: ${productCount[0].count}`);
   console.log(`   • Collections: ${collectionCount[0].count}`);
+  console.log(`   • Collection Products: ${collectionProductCount[0].count}`);
   console.log(`   • Journal Entries: ${journalCount[0].count}`);
   console.log(`   • FAQs: ${faqCount[0].count}`);
-  console.log('\n🚀 Next steps:');
+  console.log(`   • Users: ${userCount[0].count}`);
+  console.log(`   • Reviews: ${reviewCount[0].count}`);
+  console.log(`   • Newsletter Subscribers: ${subscriberCount[0].count}`);
+  console.log(`   • Orders: ${orderCount[0].count}`);
+  console.log(`   • Order Items: ${orderItemCount[0].count}`);
+  console.log(`   • Discounts: ${discountCount[0].count}`);
+  console.log(`   • Audit Logs: ${auditCount[0].count}`);  console.log('\n🚀 Next steps:');
   console.log('   1. Start backend: cd server && npm run dev');
   console.log('   2. Start frontend: npm run dev');
   console.log('   3. Open: http://localhost:5173');
