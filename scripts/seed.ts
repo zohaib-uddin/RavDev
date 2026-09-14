@@ -183,14 +183,14 @@ async function seed() {
     await sql`
       INSERT INTO products (
         name, slug, description, base_price, compare_at_price, category_id,
-        fabric, fit, sku, is_new_arrival, is_bestseller, is_featured, is_best_seller,
+        fabric, fit, sku, is_new_arrival, is_bestseller, is_featured,
         badge, images, image_url, attributes, fabric_composition, graphic_print,
         garment_specs, status, is_active
       ) VALUES (
         ${product.name}, ${product.slug}, ${product.description}, ${product.base_price},
         ${product.compare_at_price}, ${categoryId}, ${product.fabric}, ${product.fit},
         ${product.sku}, ${product.is_new_arrival}, ${product.is_bestseller},
-        ${product.is_featured}, ${product.is_bestseller}, ${product.badge},
+        ${product.is_featured}, ${product.badge},
         ${JSON.stringify(product.images)}, ${product.images[0]},
         ${JSON.stringify(product.attributes)}, ${product.fabric_composition},
         ${product.graphic_print}, ${product.garment_specs}, 'active', true
