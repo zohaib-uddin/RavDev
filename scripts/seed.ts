@@ -573,7 +573,6 @@ async function seed() {
       await sql`
         INSERT INTO collection_products (collection_id, product_id, sort_order, is_active)
         VALUES (${winterCollectionId}, ${winterProducts[i].id}, ${i}, true)
-        ON CONFLICT (collection_id, product_id) DO NOTHING
       `;
     }
   }
@@ -589,7 +588,6 @@ async function seed() {
       await sql`
         INSERT INTO collection_products (collection_id, product_id, sort_order, is_active)
         VALUES (${streetwearCollectionId}, ${streetwearProducts[i].id}, ${i}, true)
-        ON CONFLICT (collection_id, product_id) DO NOTHING
       `;
     }
   }
@@ -605,7 +603,6 @@ async function seed() {
       await sql`
         INSERT INTO collection_products (collection_id, product_id, sort_order, is_active)
         VALUES (${newArrivalsCollectionId}, ${newProducts[i].id}, ${i}, true)
-        ON CONFLICT (collection_id, product_id) DO NOTHING
       `;
     }
   }
