@@ -5,10 +5,19 @@ import {
   Search, Edit, Trash2, Plus, Eye, Globe, LogOut,
   DollarSign, Box, AlertTriangle, Shield, Users, 
   BarChart3, TrendingUp, ChevronDown, FileText,
-  Percent, MessageSquare, Star
+  Percent, MessageSquare, Star, BookOpen, Mail
 } from 'lucide-react';
 import { useStore, Product, Order } from '../../store/useStore';
 import ProductForm from '../../components/admin/ProductForm';
+import {
+  AdminCategories,
+  AdminCollections,
+  AdminReviews,
+  AdminFAQs,
+  AdminJournal,
+  AdminOrders,
+  AdminNewsletter,
+} from '../../components/admin';
 
 export default function AdminPanel() {
   const { products, orders, categories, reviews, updateOrderStatus, deleteProduct, logout, fetchProducts, fetchOrders, fetchCategories } = useStore();
@@ -37,8 +46,13 @@ export default function AdminPanel() {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inventory', label: 'Inventory', icon: Package },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
-    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'categories', label: 'Categories', icon: Box },
+    { id: 'collections', label: 'Collections', icon: Package },
     { id: 'reviews', label: 'Reviews', icon: Star },
+    { id: 'faqs', label: 'FAQs', icon: MessageSquare },
+    { id: 'journal', label: 'Journal', icon: BookOpen },
+    { id: 'newsletter', label: 'Newsletter', icon: Mail },
+    { id: 'customers', label: 'Customers', icon: Users },
     { id: 'discounts', label: 'Discounts', icon: Percent },
     { id: 'seo', label: 'SEO Settings', icon: Globe },
     { id: 'audit', label: 'Audit Logs', icon: FileText },
@@ -267,51 +281,13 @@ export default function AdminPanel() {
             )}
 
             {/* Orders */}
-            {activeSection === 'orders' && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Order Management</h2>
-                {orders.length > 0 ? (
-                  <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left py-3 px-4">Order #</th>
-                          <th className="text-left py-3 px-4">Date</th>
-                          <th className="text-left py-3 px-4">Items</th>
-                          <th className="text-left py-3 px-4">Total</th>
-                          <th className="text-left py-3 px-4">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {orders.map(order => (
-                          <tr key={order.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4 font-medium">{order.order_number}</td>
-                            <td className="py-3 px-4 text-gray-500">{new Date(order.date).toLocaleDateString()}</td>
-                            <td className="py-3 px-4">{order.items?.length || 0} items</td>
-                            <td className="py-3 px-4 font-bold">Rs.{order.total.toLocaleString()}</td>
-                            <td className="py-3 px-4">
-                              <select value={order.status} onChange={e => updateOrderStatus(order.id, e.target.value as Order['status'])} className="text-xs font-bold px-2 py-1 rounded-full border focus:outline-none">
-                                <option value="pending_verification">Pending</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="processing">Processing</option>
-                                <option value="shipped">Shipped</option>
-                                <option value="delivered">Delivered</option>
-                                <option value="cancelled">Cancelled</option>
-                              </select>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <div className="text-center py-12 bg-white rounded-2xl">
-                    <ShoppingBag className="mx-auto text-gray-300 mb-4" size={48} />
-                    <p className="text-gray-500">No orders yet.</p>
-                  </div>
-                )}
-              </div>
-            )}
+            {activeSection === 'orders' && <AdminOrders />}
+
+            {/* Categories */}
+            {activeSection === 'categories' && <AdminCategories />}
+
+            {/* Collections */}
+            {activeSection === 'collections' && <AdminCollections />}
 
             {/* Customers */}
             {activeSection === 'customers' && (
@@ -329,31 +305,16 @@ export default function AdminPanel() {
             )}
 
             {/* Reviews */}
-            {activeSection === 'reviews' && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6">Customer Reviews</h2>
-                <div className="space-y-3">
-                  {reviews.map(review => (
-                    <div key={review.id} className="bg-white rounded-xl p-4 shadow-sm flex items-start gap-4">
-                      <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
-                        {review.user_name[0]}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-sm">{review.user_name}</span>
-                          <div className="flex">{[...Array(review.rating)].map((_, i) => <Star key={i} size={12} className="fill-yellow-400 text-yellow-400" />)}</div>
-                        </div>
-                        <p className="text-sm text-gray-600 mt-1">"{review.comment}"</p>
-                        <p className="text-xs text-gray-400 mt-1">{review.date}</p>
-                      </div>
-                      <span className={`text-xs font-bold px-2 py-1 rounded-full ${review.is_approved ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                        {review.is_approved ? 'APPROVED' : 'PENDING'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            {activeSection === 'reviews' && <AdminReviews />}
+
+            {/* FAQs */}
+            {activeSection === 'faqs' && <AdminFAQs />}
+
+            {/* Journal */}
+            {activeSection === 'journal' && <AdminJournal />}
+
+            {/* Newsletter */}
+            {activeSection === 'newsletter' && <AdminNewsletter />}
 
             {/* Discounts */}
             {activeSection === 'discounts' && (
