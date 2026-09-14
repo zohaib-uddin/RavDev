@@ -1,229 +1,216 @@
-// Drizzle Schema for Neon DB - Ravenza E-Commerce
-// This mirrors the actual database schema
+import { pgTable, uuid, varchar, text, boolean, integer, numeric, jsonb, timestamp, index, uniqueIndex } from 'drizzle-orm/pg-core';
 
-export interface User {
-  id: string;
-  email: string;
-  name: string | null;
-  phone: string | null;
-  role: 'customer' | 'admin';
-  is_verified: boolean;
-  created_at: string;
-  updated_at: string;
-  is_active: boolean;
-  last_login: string | null;
-}
+// Users Table
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull().unique(),
+  name: varchar('name', { length: 100 }),
+  phone: varchar('phone', { length: 20 }),
+  role: varchar('role', { length: 20 }).notNull().default('customer'),
+  is_verified: boolean('is_verified').notNull().default(false),
+  is_active: boolean('is_active').notNull().default(true),
+  password: varchar('password', { length: 255 }),
+  last_login: timestamp('last_login', { withTimezone: true }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  emailIdx: index('idx_users_email').on(table.email),
+  roleIdx: index('idx_users_role').on(table.role),
+}));
 
-export interface AdminUser {
-  id: string;
-  user_id: string;
-  permissions: Record<string, boolean>;
-  created_at: string;
-}
+// Categories Table
+export const categories = pgTable('categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 100 }).notNull(),
+  slug: varchar('slug', { length: 120 }).notNull().unique(),
+  parent_id: uuid('parent_id'),
+  description: text('description'),
+  sort_order: integer('sort_order').notNull().default(0),
+  is_active: boolean('is_active').notNull().default(true),
+  cover_image_url: varchar('cover_image_url', { length: 500 }),
+  tag: varchar('tag', { length: 100 }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  slugIdx: index('idx_categories_slug').on(table.slug),
+  activeIdx: index('idx_categories_active').on(table.is_active),
+}));
 
-export interface Category {
-  id: string;
-  name: string;
-  slug: string;
-  parent_id: string | null;
-  description: string | null;
-  sort_order: number;
-  created_at: string;
-  is_active: boolean;
-  updated_at: string;
-  cover_image_url: string | null;
-  tag: string | null;
-}
+// Products Table
+export const products = pgTable('products', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 200 }).notNull(),
+  slug: varchar('slug', { length: 220 }).notNull().unique(),
+  description: text('description'),
+  base_price: numeric('base_price', { precision: 10, scale: 2 }).notNull(),
+  compare_at_price: numeric('compare_at_price', { precision: 10, scale: 2 }),
+  is_active: boolean('is_active').notNull().default(true),
+  category_id: uuid('category_id'),
+  brand: varchar('brand', { length: 100 }).default('RAVENZA'),
+  fabric: varchar('fabric', { length: 200 }),
+  fit: varchar('fit', { length: 100 }),
+  sku: varchar('sku', { length: 100 }),
+  cost_price: numeric('cost_price', { precision: 10, scale: 2 }),
+  track_inventory: boolean('track_inventory').default(true),
+  low_stock_threshold: integer('low_stock_threshold').default(4),
+  meta_title: varchar('meta_title', { length: 255 }),
+  meta_description: text('meta_description'),
+  url_handle: varchar('url_handle', { length: 255 }),
+  is_new_arrival: boolean('is_new_arrival').default(false),
+  is_bestseller: boolean('is_bestseller').default(false),
+  is_featured: boolean('is_featured').notNull().default(false),
+  is_best_seller: boolean('is_best_seller').notNull().default(false),
+  focus_keywords: text('focus_keywords'),
+  robots_index: boolean('robots_index').notNull().default(true),
+  badge: varchar('badge', { length: 50 }),
+  meta_keywords: text('meta_keywords'),
+  shipping_info: text('shipping_info'),
+  garment_care: text('garment_care'),
+  status: varchar('status', { length: 20 }).notNull().default('active'),
+  is_draft: boolean('is_draft').default(false),
+  is_spotlight: boolean('is_spotlight').default(false),
+  attributes: jsonb('attributes').default({ sizes: ['S', 'M', 'L', 'XL'], colors: ['Black'] }),
+  variants_matrix: jsonb('variants_matrix').default([]),
+  images: jsonb('images').default([]),
+  image_url: varchar('image_url', { length: 1000 }),
+  fabric_finish: text('fabric_finish'),
+  graphic_print: text('graphic_print'),
+  garment_specs: text('garment_specs'),
+  fabric_composition: text('fabric_composition'),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  slugIdx: index('idx_products_slug').on(table.slug),
+  categoryIdx: index('idx_products_category').on(table.category_id),
+  activeIdx: index('idx_products_active').on(table.is_active),
+  newArrivalIdx: index('idx_products_new_arrival').on(table.is_new_arrival),
+  bestsellerIdx: index('idx_products_bestseller').on(table.is_bestseller),
+  featuredIdx: index('idx_products_featured').on(table.is_featured),
+}));
 
-export interface Product {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  base_price: number;
-  compare_at_price: number | null;
-  is_active: boolean;
-  category_id: string | null;
-  metadata: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-  subcategory_id: string | null;
-  brand: string;
-  fabric: string | null;
-  fit: string | null;
-  sku: string | null;
-  cost_price: number | null;
-  track_inventory: boolean;
-  low_stock_threshold: number;
-  meta_title: string | null;
-  meta_description: string | null;
-  url_handle: string | null;
-  subcategory_name: string | null;
-  is_new_arrival: boolean;
-  is_bestseller: boolean;
-  is_featured: boolean;
-  is_best_seller: boolean;
-  canonical_url: string | null;
-  focus_keywords: string | null;
-  robots_index: boolean;
-  chapter_campaign_edition: string | null;
-  size_guide: any[];
-  badge: string | null;
-  is_warm_chapter_1: boolean;
-  meta_keywords: string | null;
-  cloudinary_image_id: string | null;
-  shipping_info: string | null;
-  garment_care: string | null;
-  status: string;
-  is_draft: boolean;
-  is_spotlight: boolean;
-  is_placement_grid: boolean;
-  model_size: string | null;
-  shipping_delivery: string | null;
-  attributes: { sizes: string[]; colors: string[] };
-  variants_matrix: any[];
-  images: string[];
-  image_url: string | null;
-  fabric_finish: string | null;
-  graphic_print: string | null;
-  garment_specs: string | null;
-  fabric_composition: string | null;
-}
+// Orders Table
+export const orders = pgTable('orders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  order_number: varchar('order_number', { length: 20 }).notNull().unique(),
+  user_id: uuid('user_id'),
+  status: varchar('status', { length: 30 }).notNull().default('pending_verification'),
+  subtotal: numeric('subtotal', { precision: 10, scale: 2 }).notNull(),
+  shipping_cost: numeric('shipping_cost', { precision: 10, scale: 2 }).notNull().default('0'),
+  total: numeric('total', { precision: 10, scale: 2 }).notNull(),
+  shipping_address: jsonb('shipping_address').notNull(),
+  notes: text('notes'),
+  discount_amount: numeric('discount_amount', { precision: 10, scale: 2 }).notNull().default('0'),
+  discount_code: varchar('discount_code', { length: 50 }),
+  tracking_number: varchar('tracking_number', { length: 100 }),
+  email_status: varchar('email_status', { length: 30 }).notNull().default('pending'),
+  timeline: jsonb('timeline').default([]),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  orderNumberIdx: index('idx_orders_number').on(table.order_number),
+  userIdx: index('idx_orders_user').on(table.user_id),
+  statusIdx: index('idx_orders_status').on(table.status),
+}));
 
-export interface ProductVariant {
-  id: string;
-  product_id: string;
-  sku: string;
-  size: string | null;
-  color: string | null;
-  price_override: number | null;
-  stock_quantity: number;
-  image_url: string | null;
-  created_at: string;
-  reorder_point: number;
-  version: number;
-  cost_price: number;
-  color_hex: string | null;
-  color_code: string | null;
-}
+// Order Items Table
+export const order_items = pgTable('order_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  order_id: uuid('order_id').notNull(),
+  product_id: uuid('product_id').notNull(),
+  product_name: varchar('product_name', { length: 200 }),
+  variant_id: uuid('variant_id'),
+  quantity: integer('quantity').notNull(),
+  unit_price: numeric('unit_price', { precision: 10, scale: 2 }).notNull(),
+  total_price: numeric('total_price', { precision: 10, scale: 2 }),
+  sku: varchar('sku', { length: 50 }),
+  size: varchar('size', { length: 20 }),
+  color: varchar('color', { length: 50 }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  orderIdIdx: index('idx_order_items_order').on(table.order_id),
+}));
 
-export interface Collection {
-  id: string;
-  name: string;
-  slug: string;
-  type: 'manual' | 'automated';
-  rules: any;
-  cover_image_url: string | null;
-  is_active: boolean;
-  created_at: string;
-  sort_order: number;
-  updated_at: string;
-  rules_match: string;
-  show_on_home_chapter: boolean;
-  chapter_title: string;
-  edition_name: string;
-  show_in_focus: boolean;
-  show_explore_banner: boolean;
-  explore_title: string | null;
-  description: string | null;
-}
+// Carts Table
+export const carts = pgTable('carts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull().unique(),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdx: index('idx_carts_user_id').on(table.user_id),
+}));
 
-export interface Order {
-  id: string;
-  order_number: string;
-  user_id: string | null;
-  status: 'pending_verification' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  subtotal: number;
-  shipping_cost: number;
-  total: number;
-  shipping_address: Record<string, any>;
-  notes: string | null;
-  created_at: string;
-  updated_at: string;
-  discount_amount: number;
-  discount_code: string | null;
-  tracking_number: string | null;
-  invoice_url: string | null;
-  cancellation_reason: string | null;
-  email_status: string;
-  timeline: any[];
-}
+// Cart Items Table
+export const cart_items = pgTable('cart_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  cart_id: uuid('cart_id').notNull(),
+  product_id: varchar('product_id', { length: 255 }).notNull(),
+  variant_id: varchar('variant_id', { length: 255 }),
+  size: varchar('size', { length: 50 }).notNull(),
+  color: varchar('color', { length: 100 }).notNull(),
+  quantity: integer('quantity').notNull().default(1),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  cartIdIdx: index('idx_cart_items_cart_id').on(table.cart_id),
+  productIdIdx: index('idx_cart_items_product_id').on(table.product_id),
+}));
 
-export interface OrderItem {
-  id: string;
-  order_id: string;
-  variant_id: string | null;
-  quantity: number;
-  unit_price: number;
-  created_at: string;
-  product_name: string | null;
-  sku: string | null;
-  size: string | null;
-  color: string | null;
-  total_price: number | null;
-}
+// Reviews Table
+export const reviews = pgTable('reviews', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull(),
+  product_id: uuid('product_id').notNull(),
+  rating: integer('rating').notNull(),
+  comment: text('comment'),
+  is_approved: boolean('is_approved').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+});
 
-export interface Cart {
-  id: string;
-  user_id: string;
-  created_at: string;
-  updated_at: string;
-}
+// Wishlists Table
+export const wishlists = pgTable('wishlists', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  user_id: uuid('user_id').notNull(),
+  product_id: varchar('product_id', { length: 255 }).notNull(),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  userIdx: index('idx_wishlists_user_id').on(table.user_id),
+  productIdIdx: index('idx_wishlists_product_id').on(table.product_id),
+  uniqueIdx: uniqueIndex('unique_user_product_wishlist').on(table.user_id, table.product_id),
+}));
 
-export interface CartItem {
-  id: string;
-  cart_id: string;
-  product_id: string;
-  variant_id: string | null;
-  size: string;
-  color: string;
-  quantity: number;
-  created_at: string;
-  updated_at: string;
-}
+// Discounts Table
+export const discounts = pgTable('discounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  type: varchar('type', { length: 20 }).notNull().default('percentage'),
+  value: numeric('value', { precision: 10, scale: 2 }).notNull(),
+  min_purchase: numeric('min_purchase', { precision: 10, scale: 2 }),
+  max_uses: integer('max_uses'),
+  used_count: integer('used_count').notNull().default(0),
+  starts_at: timestamp('starts_at', { withTimezone: true }),
+  ends_at: timestamp('ends_at', { withTimezone: true }),
+  applies_to: jsonb('applies_to'),
+  is_active: boolean('is_active').notNull().default(true),
+  rules: jsonb('rules').default({}),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  deleted_at: timestamp('deleted_at', { withTimezone: true }),
+}, (table) => ({
+  codeIdx: index('idx_discounts_code').on(table.code),
+}));
 
-export interface Review {
-  id: string;
-  user_id: string;
-  product_id: string;
-  rating: number;
-  comment: string | null;
-  is_approved: boolean;
-  created_at: string;
-}
-
-export interface Wishlist {
-  id: string;
-  user_id: string;
-  product_id: string;
-  created_at: string;
-}
-
-export interface Discount {
-  id: string;
-  code: string;
-  type: 'percentage' | 'fixed' | 'bogo';
-  value: number;
-  min_purchase: number | null;
-  max_uses: number | null;
-  used_count: number;
-  starts_at: string | null;
-  ends_at: string | null;
-  applies_to: any;
-  created_at: string;
-  is_active: boolean;
-  rules: Record<string, any>;
-  deleted_at: string | null;
-}
-
-export interface AuditLog {
-  id: string;
-  entity_type: string;
-  entity_id: string;
-  action: string;
-  performed_by: string | null;
-  changes: Record<string, any>;
-  ip_address: string | null;
-  created_at: string;
-  user_agent: string | null;
-}
+// Audit Logs Table
+export const audit_logs = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  entity_type: varchar('entity_type', { length: 50 }).notNull(),
+  entity_id: varchar('entity_id', { length: 100 }).notNull(),
+  action: varchar('action', { length: 50 }).notNull(),
+  performed_by: varchar('performed_by', { length: 100 }),
+  changes: jsonb('changes').default({}),
+  ip_address: varchar('ip_address', { length: 50 }),
+  user_agent: varchar('user_agent', { length: 500 }),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  entityIdx: index('idx_audit_entity').on(table.entity_type, table.entity_id),
+  createdIdx: index('idx_audit_created').on(table.created_at),
+}));
