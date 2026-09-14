@@ -134,84 +134,91 @@ app.get('/api/products', async (req, res) => {
   try {
     console.log('📦 Fetching products from database...');
     
-    // Simple query first to test connection
+    // Simplified query - only essential columns
     const products = await sql`
-      SELECT 
-        p.id,
-        p.name,
-        p.slug,
-        p.description,
-        p.base_price,
-        p.compare_at_price,
-        p.is_active,
-        p.category_id,
-        p.brand,
-        p.fabric,
-        p.fit,
-        p.sku,
-        p.is_new_arrival,
-        p.is_bestseller,
-        p.is_featured,
-        p.is_best_seller,
-        p.badge,
-        p.images,
-        p.image_url,
-        p.attributes,
-        p.fabric_composition,
-        p.fabric_finish,
-        p.graphic_print,
-        p.garment_specs,
-        p.garment_care,
-        p.shipping_info,
-        p.meta_title,
-        p.meta_description,
-        p.focus_keywords,
-        p.status,
-        p.is_draft,
-        p.created_at,
-        p.updated_at,
-        c.name as category_name,
-        c.slug as category_slug
-      FROM products p 
-      LEFT JOIN categories c ON p.category_id = c.id 
-      WHERE p.is_active = true 
-      ORDER BY p.created_at DESC
+      SELECT * FROM products 
+      WHERE is_active = true 
+      ORDER BY created_at DESC
       LIMIT 100
     `;
     
     console.log(`✅ Found ${products.length} products`);
     
+    // Get categories for mapping
+    const categories = await sql`SELECT id, name, slug FROM categories`;
+    const categoryMap = new Map(categories.map((c: any) => [c.id, c]));
+    
     // Transform data to match frontend expectations
-    const transformedProducts = products.map((p: any) => ({
-      ...p,
-      price: parseFloat(p.base_price),
-      salePrice: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
-      image: p.image_url || (p.images && p.images[0]) || '',
-      sizes: p.attributes?.sizes || ['S', 'M', 'L', 'XL'],
-      colors: p.attributes?.colors || ['Black'],
-      stockCount: 50,
-      inStock: true,
-      isNew: p.is_new_arrival,
-      isFeatured: p.is_featured,
-      isBestseller: p.is_bestseller || p.is_best_seller,
-      details: [
-        p.fabric_composition,
-        p.fit && `Fit: ${p.fit}`,
-        p.garment_care && `Care: ${p.garment_care}`,
-        'Made in Pakistan'
-      ].filter(Boolean),
-      material: p.fabric_composition || p.fabric || 'Premium Cotton',
-      category: p.category_slug || 'uncategorized'
-    }));
+    const transformedProducts = products.map((p: any) => {
+      const category = categoryMap.get(p.category_id);
+      
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        description: p.description || '',
+        base_price: parseFloat(p.base_price),
+        compare_at_price: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
+        is_active: p.is_active,
+        category_id: p.category_id,
+        category_slug: category?.slug || 'uncategorized',
+        category_name: category?.name || 'Uncategorized',
+        brand: p.brand || 'RAVENZA',
+        fabric: p.fabric || null,
+        fit: p.fit || null,
+        sku: p.sku || null,
+        is_new_arrival: p.is_new_arrival || false,
+        is_bestseller: p.is_bestseller || false,
+        is_featured: p.is_featured || false,
+        is_best_seller: p.is_best_seller || false,
+        badge: p.badge || null,
+        images: p.images || [],
+        image_url: p.image_url || null,
+        attributes: p.attributes || { sizes: ['S', 'M', 'L', 'XL'], colors: ['Black'] },
+        fabric_composition: p.fabric_composition || null,
+        fabric_finish: p.fabric_finish || null,
+        graphic_print: p.graphic_print || null,
+        garment_specs: p.garment_specs || null,
+        garment_care: p.garment_care || null,
+        shipping_info: p.shipping_info || null,
+        meta_title: p.meta_title || null,
+        meta_description: p.meta_description || null,
+        focus_keywords: p.focus_keywords || null,
+        status: p.status || 'active',
+        is_draft: p.is_draft || false,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
+        // Computed fields for frontend
+        price: parseFloat(p.base_price),
+        salePrice: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
+        image: p.image_url || (p.images && p.images[0]) || '',
+        sizes: p.attributes?.sizes || ['S', 'M', 'L', 'XL'],
+        colors: p.attributes?.colors || ['Black'],
+        stockCount: 50,
+        inStock: true,
+        isNew: p.is_new_arrival,
+        isFeatured: p.is_featured,
+        isBestseller: p.is_bestseller || p.is_best_seller,
+        details: [
+          p.fabric_composition,
+          p.fit && `Fit: ${p.fit}`,
+          p.garment_care && `Care: ${p.garment_care}`,
+          'Made in Pakistan'
+        ].filter(Boolean),
+        material: p.fabric_composition || p.fabric || 'Premium Cotton',
+        category: category?.slug || 'uncategorized'
+      };
+    });
     
     res.json(transformedProducts);
   } catch (error: any) {
     console.error('❌ Get products error:', error);
     console.error('Error details:', error.message);
+    console.error('Full error:', error);
     res.status(500).json({ 
-      message: 'Server error', 
+      message: 'Server error fetching products', 
       error: error.message,
-      details: 'Check server console for more details'
+      stack: error.stack
     });
   }
 });
