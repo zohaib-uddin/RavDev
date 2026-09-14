@@ -13,7 +13,7 @@ const heroSlides = [
 ];
 
 export default function Home() {
-  const { products, reviews, fetchProducts, fetchCategories } = useStore();
+  const { products, reviews, categories, fetchProducts, fetchCategories } = useStore();
   const [currentSlide, setCurrentSlide] = useState(0);
   
   // Fetch data from API on component mount
@@ -26,14 +26,19 @@ export default function Home() {
   const newProducts = products.filter(p => p.isNew);
   const bestsellers = products.filter(p => p.isBestseller);
 
-  const categories = [
-    { name: 'Co-Ord Sets', slug: 'co-ord-sets', image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=700&fit=crop' },
-    { name: 'Graphic Shorts', slug: 'graphic-shorts', image: 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=600&h=700&fit=crop' },
-    { name: 'Graphic Trousers', slug: 'graphic-trousers', image: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&h=700&fit=crop' },
-    { name: 'Acid Wash Tees', slug: 'oversize-tees', image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop' },
-    { name: 'Trackpants', slug: 'trackpants', image: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop' },
-    { name: 'Shirts & Jackets', slug: 'shirts', image: 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=700&fit=crop' },
-  ];
+  // Category images mapping (fallback images for each category)
+  const getCategoryImage = (slug: string, coverUrl: string | null) => {
+    if (coverUrl) return coverUrl;
+    const images: Record<string, string> = {
+      'co-ord-sets': 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=700&fit=crop',
+      'graphic-shorts': 'https://images.unsplash.com/photo-1591195853828-11db59a44f6b?w=600&h=700&fit=crop',
+      'graphic-trousers': 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=600&h=700&fit=crop',
+      'oversize-tees': 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=700&fit=crop',
+      'trackpants': 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=600&h=700&fit=crop',
+      'shirts': 'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=600&h=700&fit=crop',
+    };
+    return images[slug] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=700&fit=crop';
+  };
 
   return (
     <div>
@@ -74,7 +79,7 @@ export default function Home() {
             <motion.div key={cat.slug} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}>
               <Link to={`/shop/${cat.slug}`} className="group block">
                 <div className="aspect-[3/4] rounded-2xl overflow-hidden mb-3">
-                  <img src={cat.image} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img src={getCategoryImage(cat.slug, cat.cover_image_url)} alt={cat.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                 </div>
                 <h3 className="text-sm font-semibold text-center group-hover:text-purple-600">{cat.name}</h3>
               </Link>

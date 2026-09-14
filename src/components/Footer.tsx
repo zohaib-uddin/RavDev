@@ -1,7 +1,18 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Instagram, Facebook, Mail, Phone, MapPin, Shield } from 'lucide-react';
+import { useStore } from '../store/useStore';
 
 export default function Footer() {
+  const categories = useStore(state => state.categories);
+  const fetchCategories = useStore(state => state.fetchCategories);
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      fetchCategories();
+    }
+  }, []);
+
   return (
     <footer className="bg-black text-white">
       <div className="border-b border-white/10">
@@ -28,10 +39,11 @@ export default function Footer() {
             <h4 className="font-semibold mb-4 text-sm tracking-wider">QUICK LINKS</h4>
             <ul className="space-y-2">
               <li><Link to="/shop" className="text-gray-400 hover:text-white text-sm">Shop All</Link></li>
-              <li><Link to="/shop/co-ord-sets" className="text-gray-400 hover:text-white text-sm">Co-Ord Sets</Link></li>
-              <li><Link to="/shop/oversize-tees" className="text-gray-400 hover:text-white text-sm">Oversize Tees</Link></li>
-              <li><Link to="/shop/graphic-trousers" className="text-gray-400 hover:text-white text-sm">Graphic Trousers</Link></li>
-              <li><Link to="/shop/trackpants" className="text-gray-400 hover:text-white text-sm">Trackpants</Link></li>
+              {categories.slice(0, 5).map(cat => (
+                <li key={cat.slug}>
+                  <Link to={`/shop/${cat.slug}`} className="text-gray-400 hover:text-white text-sm">{cat.name}</Link>
+                </li>
+              ))}
             </ul>
           </div>
           <div>

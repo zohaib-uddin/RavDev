@@ -11,6 +11,8 @@ export default function Navbar() {
   const cart = useStore(state => state.cart);
   const wishlist = useStore(state => state.wishlist);
   const user = useStore(state => state.user);
+  const categories = useStore(state => state.categories);
+  const fetchCategories = useStore(state => state.fetchCategories);
   const navigate = useNavigate();
   const location = useLocation();
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -21,16 +23,13 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => { setIsMobileMenuOpen(false); }, [location]);
-
-  const categories = [
-    { name: 'Co-Ord Sets', slug: 'co-ord-sets' },
-    { name: 'Oversize Tees', slug: 'oversize-tees' },
-    { name: 'Graphic Trousers', slug: 'graphic-trousers' },
-    { name: 'Trackpants', slug: 'trackpants' },
-    { name: 'Graphic Shorts', slug: 'graphic-shorts' },
-    { name: 'Shirts & Jackets', slug: 'shirts' },
-  ];
+  useEffect(() => { 
+    setIsMobileMenuOpen(false);
+    // Fetch categories if not already loaded
+    if (categories.length === 0) {
+      fetchCategories();
+    }
+  }, [location]);
 
   return (
     <>

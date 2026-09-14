@@ -7,15 +7,21 @@ import { useStore } from '../store/useStore';
 export default function Shop() {
   const { category } = useParams();
   const [searchParams] = useSearchParams();
-  const { products, fetchProducts } = useStore();
+  const { products, categories, fetchProducts, fetchCategories } = useStore();
   const [sortBy, setSortBy] = useState('featured');
   const isNew = searchParams.get('new') === 'true';
   
-  // Fetch products from API
+  // Fetch products and categories from API
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
-  const categoryNames: Record<string, string> = { 'co-ord-sets': 'Co-Ord Sets', 'oversize-tees': 'Oversize Tees', 'graphic-trousers': 'Graphic Trousers', 'trackpants': 'Trackpants', 'graphic-shorts': 'Graphic Shorts', 'shirts': 'Shirts & Jackets' };
+  
+  // Dynamic category names from store (fetched from NeonDB)
+  const categoryNames: Record<string, string> = categories.reduce((acc, cat) => {
+    acc[cat.slug] = cat.name;
+    return acc;
+  }, {} as Record<string, string>);
 
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
