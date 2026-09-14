@@ -114,7 +114,9 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
+  parent_id?: string | null;
   description: string | null;
+  badge?: string | null;
   cover_image_url: string | null;
   is_active: boolean;
   sort_order: number;
