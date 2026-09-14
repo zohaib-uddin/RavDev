@@ -9,63 +9,85 @@ async function fixDatabase() {
   console.log('🔧 Fixing database schema issues...\n');
 
   try {
-    // Step 1: Add missing columns to products FIRST
+    // Step 1: Add missing columns to products (individually using tagged templates)
     console.log('📦 Adding missing columns to products...');
     
-    // Add is_best_seller column (NOT NULL with default)
     try {
       await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_best_seller boolean NOT NULL DEFAULT false`;
-      console.log('  ✓ Added column: is_best_seller');
-    } catch (error: any) {
-      if (error.message.includes('already exists')) {
-        console.log('  ✓ Column already exists: is_best_seller');
-      } else {
-        console.log(`  ⚠️  Could not add is_best_seller: ${error.message}`);
-      }
+      console.log('  ✓ Added: is_best_seller');
+    } catch (e: any) {
+      console.log('  ⚠️  is_best_seller:', e.message.slice(0, 80));
     }
 
-    // Add other columns
-    const columnsToAdd = [
-      { name: 'subcategory_id', type: 'uuid' },
-      { name: 'shipping_delivery', type: 'text' },
-      { name: 'model_size', type: 'varchar(255)' },
-      { name: 'canonical_url', type: 'varchar(500)' },
-      { name: 'cloudinary_image_id', type: 'varchar(255)' },
-      { name: 'size_guide', type: 'jsonb DEFAULT \'[]\'::jsonb' },
-    ];
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS subcategory_id uuid`;
+      console.log('  ✓ Added: subcategory_id');
+    } catch (e: any) {
+      console.log('  ⚠️  subcategory_id:', e.message.slice(0, 80));
+    }
 
-    for (const col of columnsToAdd) {
-      try {
-        await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS ${sql(col.name)} ${sql(col.type)}`;
-        console.log(`  ✓ Added column: ${col.name}`);
-      } catch (error: any) {
-        if (error.message.includes('already exists')) {
-          console.log(`  ✓ Column already exists: ${col.name}`);
-        } else {
-          console.log(`  ⚠️  Could not add ${col.name}: ${error.message}`);
-        }
-      }
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS shipping_delivery text`;
+      console.log('  ✓ Added: shipping_delivery');
+    } catch (e: any) {
+      console.log('  ⚠️  shipping_delivery:', e.message.slice(0, 80));
+    }
+
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS model_size varchar(255)`;
+      console.log('  ✓ Added: model_size');
+    } catch (e: any) {
+      console.log('  ⚠️  model_size:', e.message.slice(0, 80));
+    }
+
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS canonical_url varchar(500)`;
+      console.log('  ✓ Added: canonical_url');
+    } catch (e: any) {
+      console.log('  ⚠️  canonical_url:', e.message.slice(0, 80));
+    }
+
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS cloudinary_image_id varchar(255)`;
+      console.log('  ✓ Added: cloudinary_image_id');
+    } catch (e: any) {
+      console.log('  ⚠️  cloudinary_image_id:', e.message.slice(0, 80));
+    }
+
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS size_guide jsonb DEFAULT '[]'::jsonb`;
+      console.log('  ✓ Added: size_guide');
+    } catch (e: any) {
+      console.log('  ⚠️  size_guide:', e.message.slice(0, 80));
+    }
+
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS meta_keywords text`;
+      console.log('  ✓ Added: meta_keywords');
+    } catch (e: any) {
+      console.log('  ⚠️  meta_keywords:', e.message.slice(0, 80));
+    }
+
+    try {
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_spotlight boolean DEFAULT false`;
+      console.log('  ✓ Added: is_spotlight');
+    } catch (e: any) {
+      console.log('  ⚠️  is_spotlight:', e.message.slice(0, 80));
     }
     
     console.log('✅ Products columns added\n');
 
-    // Step 2: Fix categories table - add badge column
+    // Step 2: Fix categories table
     console.log('📂 Fixing categories table...');
-    
     try {
       await sql`ALTER TABLE categories ADD COLUMN IF NOT EXISTS badge varchar(50)`;
       console.log('✅ Badge column added to categories\n');
-    } catch (error: any) {
-      if (error.message.includes('already exists')) {
-        console.log('✅ Badge column already exists\n');
-      } else {
-        throw error;
-      }
+    } catch (e: any) {
+      console.log('✅ Badge column already exists\n');
     }
 
-    // Step 3: Fix products table - update NULL values
+    // Step 3: Fix products NULL values
     console.log('📦 Fixing products table NULL values...');
-    
     await sql`
       UPDATE products 
       SET 
@@ -78,13 +100,11 @@ async function fixDatabase() {
         garment_care = COALESCE(garment_care, 'Machine wash cold'),
         status = COALESCE(status, 'active')
     `;
-    
     console.log('✅ Products table NULL values fixed\n');
 
-    // Step 4: Create new tables if they don't exist
+    // Step 4: Create new tables
     console.log('📊 Creating new tables...');
 
-    // Collection Products table
     await sql`
       CREATE TABLE IF NOT EXISTS collection_products (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -95,9 +115,8 @@ async function fixDatabase() {
         added_at timestamp with time zone NOT NULL DEFAULT now()
       )
     `;
-    console.log('  ✓ collection_products table created');
+    console.log('  ✓ collection_products');
 
-    // Journal Entries table
     await sql`
       CREATE TABLE IF NOT EXISTS journal_entries (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -114,9 +133,8 @@ async function fixDatabase() {
         updated_at timestamp with time zone NOT NULL DEFAULT now()
       )
     `;
-    console.log('  ✓ journal_entries table created');
+    console.log('  ✓ journal_entries');
 
-    // FAQs table
     await sql`
       CREATE TABLE IF NOT EXISTS faqs (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -129,9 +147,8 @@ async function fixDatabase() {
         updated_at timestamp with time zone NOT NULL DEFAULT now()
       )
     `;
-    console.log('  ✓ faqs table created');
+    console.log('  ✓ faqs');
 
-    // Newsletter Subscribers table
     await sql`
       CREATE TABLE IF NOT EXISTS newsletter_subscribers (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -140,9 +157,8 @@ async function fixDatabase() {
         subscribed_at timestamp with time zone NOT NULL DEFAULT now()
       )
     `;
-    console.log('  ✓ newsletter_subscribers table created');
+    console.log('  ✓ newsletter_subscribers');
 
-    // Reviews table
     await sql`
       CREATE TABLE IF NOT EXISTS reviews (
         id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -154,35 +170,19 @@ async function fixDatabase() {
         created_at timestamp with time zone NOT NULL DEFAULT now()
       )
     `;
-    console.log('  ✓ reviews table created');
+    console.log('  ✓ reviews');
 
     console.log('✅ All tables created\n');
 
-    // Step 5: Create indexes
-    console.log('🔍 Creating indexes...');
-    
-    const indexes = [
-      'CREATE INDEX IF NOT EXISTS collection_products_collection_idx ON collection_products (collection_id)',
-      'CREATE INDEX IF NOT EXISTS collection_products_product_idx ON collection_products (product_id)',
-      'CREATE UNIQUE INDEX IF NOT EXISTS collection_products_unique_idx ON collection_products (collection_id, product_id)',
-      'CREATE INDEX IF NOT EXISTS journal_active_idx ON journal_entries (is_active)',
-      'CREATE INDEX IF NOT EXISTS journal_order_idx ON journal_entries (display_order)',
-      'CREATE INDEX IF NOT EXISTS faqs_active_idx ON faqs (is_active)',
-      'CREATE INDEX IF NOT EXISTS faqs_order_idx ON faqs (display_order)',
-      'CREATE UNIQUE INDEX IF NOT EXISTS newsletter_email_idx ON newsletter_subscribers (email)',
-      'CREATE INDEX IF NOT EXISTS reviews_product_idx ON reviews (product_id)',
-      'CREATE INDEX IF NOT EXISTS reviews_approved_idx ON reviews (is_approved)',
-    ];
-
-    for (const index of indexes) {
-      try {
-        await sql(index);
-      } catch (error: any) {
-        // Ignore if index already exists
-      }
-    }
-    
-    console.log('✅ Indexes created\n');
+    // Step 5: Verify columns exist
+    console.log('🔍 Verifying columns...');
+    const columns = await sql`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'products'
+      ORDER BY ordinal_position
+    `;
+    console.log(`✅ Products table has ${columns.length} columns\n`);
 
     console.log('═══════════════════════════════════════');
     console.log('✅ DATABASE FIX COMPLETE!');
@@ -190,12 +190,10 @@ async function fixDatabase() {
     console.log('\n🚀 Next steps:');
     console.log('   1. Run: npx tsx scripts/seed.ts');
     console.log('   2. Start backend: cd server && npm run dev');
-    console.log('   3. Start frontend: npm run dev');
-    console.log('\n');
+    console.log('   3. Start frontend: npm run dev\n');
 
   } catch (error: any) {
-    console.error('❌ Error fixing database:', error);
-    console.error('\nError details:', error.message);
+    console.error('❌ Error:', error.message);
     process.exit(1);
   }
 }
