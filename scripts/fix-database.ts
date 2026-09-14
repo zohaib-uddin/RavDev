@@ -9,49 +9,24 @@ async function fixDatabase() {
   console.log('🔧 Fixing database schema issues...\n');
 
   try {
-    // Step 1: Fix products table - update NULL values
-    console.log('📦 Fixing products table NULL values...');
+    // Step 1: Add missing columns to products FIRST
+    console.log('📦 Adding missing columns to products...');
     
-    await sql`
-      UPDATE products 
-      SET 
-        is_new_arrival = COALESCE(is_new_arrival, false),
-        is_bestseller = COALESCE(is_bestseller, false),
-        is_featured = COALESCE(is_featured, false),
-        is_best_seller = COALESCE(is_best_seller, false),
-        fabric_composition = COALESCE(fabric_composition, 'Premium Cotton'),
-        fabric_finish = COALESCE(fabric_finish, 'Matte'),
-        garment_care = COALESCE(garment_care, 'Machine wash cold'),
-        shipping_delivery = COALESCE(shipping_delivery, '3-5 business days'),
-        model_size = COALESCE(model_size, 'Model wears size M'),
-        status = COALESCE(status, 'active')
-      WHERE is_new_arrival IS NULL 
-         OR is_bestseller IS NULL 
-         OR is_featured IS NULL
-    `;
-    
-    console.log('✅ Products table NULL values fixed\n');
-
-    // Step 2: Fix categories table - add badge column if not exists
-    console.log('📂 Fixing categories table...');
-    
+    // Add is_best_seller column (NOT NULL with default)
     try {
-      await sql`ALTER TABLE categories ADD COLUMN IF NOT EXISTS badge varchar(50)`;
-      console.log('✅ Badge column added to categories\n');
+      await sql`ALTER TABLE products ADD COLUMN IF NOT EXISTS is_best_seller boolean NOT NULL DEFAULT false`;
+      console.log('  ✓ Added column: is_best_seller');
     } catch (error: any) {
       if (error.message.includes('already exists')) {
-        console.log('✅ Badge column already exists\n');
+        console.log('  ✓ Column already exists: is_best_seller');
       } else {
-        throw error;
+        console.log(`  ⚠️  Could not add is_best_seller: ${error.message}`);
       }
     }
 
-    // Step 3: Add missing columns to products
-    console.log('📦 Adding missing columns to products...');
-    
+    // Add other columns
     const columnsToAdd = [
       { name: 'subcategory_id', type: 'uuid' },
-      { name: 'is_best_seller', type: 'boolean DEFAULT false NOT NULL' },
       { name: 'shipping_delivery', type: 'text' },
       { name: 'model_size', type: 'varchar(255)' },
       { name: 'canonical_url', type: 'varchar(500)' },
@@ -73,6 +48,38 @@ async function fixDatabase() {
     }
     
     console.log('✅ Products columns added\n');
+
+    // Step 2: Fix categories table - add badge column
+    console.log('📂 Fixing categories table...');
+    
+    try {
+      await sql`ALTER TABLE categories ADD COLUMN IF NOT EXISTS badge varchar(50)`;
+      console.log('✅ Badge column added to categories\n');
+    } catch (error: any) {
+      if (error.message.includes('already exists')) {
+        console.log('✅ Badge column already exists\n');
+      } else {
+        throw error;
+      }
+    }
+
+    // Step 3: Fix products table - update NULL values
+    console.log('📦 Fixing products table NULL values...');
+    
+    await sql`
+      UPDATE products 
+      SET 
+        is_new_arrival = COALESCE(is_new_arrival, false),
+        is_bestseller = COALESCE(is_bestseller, false),
+        is_featured = COALESCE(is_featured, false),
+        is_best_seller = COALESCE(is_best_seller, false),
+        fabric_composition = COALESCE(fabric_composition, 'Premium Cotton'),
+        fabric_finish = COALESCE(fabric_finish, 'Matte'),
+        garment_care = COALESCE(garment_care, 'Machine wash cold'),
+        status = COALESCE(status, 'active')
+    `;
+    
+    console.log('✅ Products table NULL values fixed\n');
 
     // Step 4: Create new tables if they don't exist
     console.log('📊 Creating new tables...');
