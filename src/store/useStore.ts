@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import api from '../services/api';
 
-// Types
+// Types - Updated to match new schema
 export interface Product {
   id: string;
   name: string;
@@ -11,34 +11,51 @@ export interface Product {
   compare_at_price: number | null;
   is_active: boolean;
   category_id: string | null;
+  subcategory_id?: string | null;
   category_slug?: string;
   category_name?: string;
   brand: string;
-  fabric: string | null;
-  fit: string | null;
   sku: string | null;
+  
+  // Flags
   is_new_arrival: boolean;
-  is_bestseller: boolean;
-  is_featured: boolean;
   is_best_seller: boolean;
-  badge: string | null;
-  images: string[];
-  image_url: string | null;
-  attributes: { sizes: string[]; colors: string[] };
+  is_featured: boolean;
+  is_spotlight?: boolean;
+  is_draft?: boolean;
+  
+  // Specifications
+  fabric: string | null;
   fabric_composition: string | null;
   fabric_finish: string | null;
+  fit: string | null;
   graphic_print: string | null;
   garment_specs: string | null;
   garment_care: string | null;
-  shipping_info: string | null;
+  shipping_delivery: string | null;
+  model_size: string | null;
+  
+  // SEO
   meta_title: string | null;
   meta_description: string | null;
+  meta_keywords: string | null;
   focus_keywords: string | null;
+  
+  // Media
+  badge: string | null;
+  images: string[];
+  image_url: string | null;
+  
+  // Variants
+  attributes: { sizes: string[]; colors: string[] };
+  variants_matrix?: any[];
+  
+  // Status
   status: string;
-  is_draft: boolean;
   created_at: string;
   updated_at: string;
-  // Computed
+  
+  // Computed fields for frontend
   price?: number;
   salePrice?: number;
   image?: string;
