@@ -1,12 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Package, Heart, LogOut, ShoppingBag, MapPin, Settings } from 'lucide-react';
 import { useStore } from '../store/useStore';
 
 export default function CustomerDashboard() {
-  const { user, logout, orders, wishlist, products } = useStore();
+  const { user, logout, orders, wishlist, products, fetchOrders, fetchProducts } = useStore();
   const [activeTab, setActiveTab] = useState('overview');
+  
+  // Fetch data from API
+  useEffect(() => {
+    fetchOrders();
+    fetchProducts();
+  }, []);
+  
   const wishlistProducts = products.filter(p => wishlist.includes(p.id));
   const tabs = [{ id: 'overview', label: 'Overview', icon: User }, { id: 'orders', label: 'My Orders', icon: Package }, { id: 'wishlist', label: 'Wishlist', icon: Heart }, { id: 'settings', label: 'Settings', icon: Settings }];
 

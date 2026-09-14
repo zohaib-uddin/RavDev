@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, useSearchParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { SlidersHorizontal, X } from 'lucide-react';
@@ -7,9 +7,14 @@ import { useStore } from '../store/useStore';
 export default function Shop() {
   const { category } = useParams();
   const [searchParams] = useSearchParams();
-  const { products } = useStore();
+  const { products, fetchProducts } = useStore();
   const [sortBy, setSortBy] = useState('featured');
   const isNew = searchParams.get('new') === 'true';
+  
+  // Fetch products from API
+  useEffect(() => {
+    fetchProducts();
+  }, []);
   const categoryNames: Record<string, string> = { 'co-ord-sets': 'Co-Ord Sets', 'oversize-tees': 'Oversize Tees', 'graphic-trousers': 'Graphic Trousers', 'trackpants': 'Trackpants', 'graphic-shorts': 'Graphic Shorts', 'shirts': 'Shirts & Jackets' };
 
   const filteredProducts = useMemo(() => {

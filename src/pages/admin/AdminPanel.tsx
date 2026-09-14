@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   LayoutDashboard, Package, ShoppingBag, Settings, 
@@ -11,12 +11,19 @@ import { useStore, Product, Order } from '../../store/useStore';
 import ProductForm from '../../components/admin/ProductForm';
 
 export default function AdminPanel() {
-  const { products, orders, categories, reviews, updateOrderStatus, deleteProduct, logout } = useStore();
+  const { products, orders, categories, reviews, updateOrderStatus, deleteProduct, logout, fetchProducts, fetchOrders, fetchCategories } = useStore();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [showProductForm, setShowProductForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterCategory, setFilterCategory] = useState('');
+  
+  // Fetch all data from API on component mount
+  useEffect(() => {
+    fetchProducts();
+    fetchOrders();
+    fetchCategories();
+  }, []);
 
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
   const lowStockProducts = products.filter(p => (p.stockCount || 50) < 20);
