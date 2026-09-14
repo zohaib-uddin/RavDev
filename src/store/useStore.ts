@@ -224,9 +224,13 @@ export const useStore = create<StoreState>((set, get) => ({
   fetchProducts: async () => {
     set({ isLoading: true });
     try {
+      console.log('🔄 Fetching products from API...');
       const products = await api.getProducts();
+      console.log(`✅ Received ${products.length} products from API`);
       set({ products, apiAvailable: true });
-    } catch {
+    } catch (error: any) {
+      console.error('❌ Failed to fetch products:', error);
+      console.error('Error details:', error.message);
       set({ apiAvailable: false });
     }
     set({ isLoading: false });
@@ -234,9 +238,13 @@ export const useStore = create<StoreState>((set, get) => ({
 
   fetchCategories: async () => {
     try {
+      console.log('🔄 Fetching categories from API...');
       const categories = await api.getCategories();
+      console.log(`✅ Received ${categories.length} categories from API`);
       set({ categories, apiAvailable: true });
-    } catch {
+    } catch (error: any) {
+      console.error('❌ Failed to fetch categories:', error);
+      console.error('Error details:', error.message);
       set({ apiAvailable: false });
     }
   },

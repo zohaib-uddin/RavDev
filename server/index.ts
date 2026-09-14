@@ -16,6 +16,28 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 app.use(cors());
 app.use(express.json());
 
+// Health Check Endpoint
+app.get('/api/health', async (req, res) => {
+  try {
+    console.log('🏥 Health check - Testing database connection...');
+    const result = await sql`SELECT NOW() as current_time`;
+    console.log('✅ Database connection successful:', result[0].current_time);
+    res.json({ 
+      status: 'ok', 
+      message: 'Server is running',
+      database: 'connected',
+      timestamp: result[0].current_time
+    });
+  } catch (error: any) {
+    console.error('❌ Database connection failed:', error);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Database connection failed',
+      error: error.message 
+    });
+  }
+});
+
 // Auth Middleware
 const authenticateToken = (req: any, res: any, next: any) => {
   const authHeader = req.headers['authorization'];
@@ -110,35 +132,87 @@ app.post('/api/auth/register', async (req, res) => {
 
 app.get('/api/products', async (req, res) => {
   try {
-    const { category, search, page = 1, limit = 50 } = req.query;
-    let query = `SELECT p.*, c.name as category_name, c.slug as category_slug 
-                 FROM products p 
-                 LEFT JOIN categories c ON p.category_id = c.id 
-                 WHERE p.is_active = true AND p.is_draft = false`;
+    console.log('📦 Fetching products from database...');
     
-    const params: any[] = [];
+    // Simple query first to test connection
+    const products = await sql`
+      SELECT 
+        p.id,
+        p.name,
+        p.slug,
+        p.description,
+        p.base_price,
+        p.compare_at_price,
+        p.is_active,
+        p.category_id,
+        p.brand,
+        p.fabric,
+        p.fit,
+        p.sku,
+        p.is_new_arrival,
+        p.is_bestseller,
+        p.is_featured,
+        p.is_best_seller,
+        p.badge,
+        p.images,
+        p.image_url,
+        p.attributes,
+        p.fabric_composition,
+        p.fabric_finish,
+        p.graphic_print,
+        p.garment_specs,
+        p.garment_care,
+        p.shipping_info,
+        p.meta_title,
+        p.meta_description,
+        p.focus_keywords,
+        p.status,
+        p.is_draft,
+        p.created_at,
+        p.updated_at,
+        c.name as category_name,
+        c.slug as category_slug
+      FROM products p 
+      LEFT JOIN categories c ON p.category_id = c.id 
+      WHERE p.is_active = true 
+      ORDER BY p.created_at DESC
+      LIMIT 100
+    `;
     
-    if (category) {
-      query += ` AND c.slug = $${params.length + 1}`;
-      params.push(category);
-    }
+    console.log(`✅ Found ${products.length} products`);
     
-    if (search) {
-      query += ` AND (p.name ILIKE $${params.length + 1} OR p.description ILIKE $${params.length + 1})`;
-      params.push(`%${search}%`);
-    }
+    // Transform data to match frontend expectations
+    const transformedProducts = products.map((p: any) => ({
+      ...p,
+      price: parseFloat(p.base_price),
+      salePrice: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
+      image: p.image_url || (p.images && p.images[0]) || '',
+      sizes: p.attributes?.sizes || ['S', 'M', 'L', 'XL'],
+      colors: p.attributes?.colors || ['Black'],
+      stockCount: 50,
+      inStock: true,
+      isNew: p.is_new_arrival,
+      isFeatured: p.is_featured,
+      isBestseller: p.is_bestseller || p.is_best_seller,
+      details: [
+        p.fabric_composition,
+        p.fit && `Fit: ${p.fit}`,
+        p.garment_care && `Care: ${p.garment_care}`,
+        'Made in Pakistan'
+      ].filter(Boolean),
+      material: p.fabric_composition || p.fabric || 'Premium Cotton',
+      category: p.category_slug || 'uncategorized'
+    }));
     
-    query += ` ORDER BY p.created_at DESC`;
-    
-    const offset = (Number(page) - 1) * Number(limit);
-    query += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
-    params.push(limit, offset);
-
-    const products = await sql(query, params);
-    res.json(products);
-  } catch (error) {
-    console.error('Get products error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.json(transformedProducts);
+  } catch (error: any) {
+    console.error('❌ Get products error:', error);
+    console.error('Error details:', error.message);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message,
+      details: 'Check server console for more details'
+    });
   }
 });
 
@@ -245,11 +319,34 @@ app.delete('/api/products/:id', authenticateToken, adminOnly, async (req, res) =
 
 app.get('/api/categories', async (req, res) => {
   try {
-    const categories = await sql`SELECT * FROM categories WHERE is_active = true ORDER BY sort_order`;
+    console.log('📂 Fetching categories from database...');
+    
+    const categories = await sql`
+      SELECT 
+        id,
+        name,
+        slug,
+        description,
+        sort_order,
+        is_active,
+        cover_image_url,
+        tag,
+        created_at,
+        updated_at
+      FROM categories 
+      WHERE is_active = true 
+      ORDER BY sort_order ASC
+    `;
+    
+    console.log(`✅ Found ${categories.length} categories`);
     res.json(categories);
-  } catch (error) {
-    console.error('Get categories error:', error);
-    res.status(500).json({ message: 'Server error' });
+  } catch (error: any) {
+    console.error('❌ Get categories error:', error);
+    console.error('Error details:', error.message);
+    res.status(500).json({ 
+      message: 'Server error', 
+      error: error.message 
+    });
   }
 });
 
