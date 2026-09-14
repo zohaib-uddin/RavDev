@@ -490,6 +490,38 @@ app.get('/api/admin/stats', authenticateToken, adminOnly, async (req, res) => {
   }
 });
 
+// ==================== JOURNAL ENTRIES ====================
+
+app.get('/api/journal', async (req, res) => {
+  try {
+    const entries = await sql`
+      SELECT * FROM journal_entries 
+      WHERE is_active = true 
+      ORDER BY display_order ASC, published_date DESC
+    `;
+    res.json(entries);
+  } catch (error: any) {
+    console.error('Get journal entries error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== FAQs ====================
+
+app.get('/api/faqs', async (req, res) => {
+  try {
+    const faqs = await sql`
+      SELECT * FROM faqs 
+      WHERE is_active = true 
+      ORDER BY display_order ASC
+    `;
+    res.json(faqs);
+  } catch (error: any) {
+    console.error('Get FAQs error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Ravenza API Server running on http://localhost:${PORT}`);
