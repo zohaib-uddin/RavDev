@@ -4,13 +4,13 @@ import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import FilterSidebar from '../components/collection/FilterSidebar';
 import QuickViewModal from '../components/collection/QuickViewModal';
-import { Product } from '../store/useStore';
+import CollectionHero from '../components/CollectionHero';
 
 export default function CollectionPage() {
   const { categorySlug } = useParams();
-  const { products, categories, fetchProducts } = useStore();
-  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [quickViewProduct, setQuickViewProduct] = useState<Product | null>(null);
+  const { products, categories, fetchProducts, fetchCategories } = useStore();
+  const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [quickViewProduct, setQuickViewProduct] = useState<any>(null);
   const [filters, setFilters] = useState({
     sizes: [] as string[],
     colors: [] as string[],
@@ -18,13 +18,24 @@ export default function CollectionPage() {
   });
 
   useEffect(() => {
-    fetchProducts();
+    if (products.length === 0) fetchProducts();
+    if (categories.length === 0) fetchCategories();
   }, []);
 
   useEffect(() => {
     if (categorySlug && products.length > 0) {
-      // Filter products by category
-      let filtered = products.filter(p => p.category === categorySlug);
+      // Get the current category and its subcategories
+      const currentCategory = categories.find(c => c.slug === categorySlug);
+      const subcategorySlugs = currentCategory
+        ? categories
+            .filter(c => c.parent_id === currentCategory.id)
+            .map(c => c.slug)
+        : [];
+
+      // Filter products by category and its subcategories
+      let filtered = products.filter(p => 
+        p.category === categorySlug || (p.category && subcategorySlugs.includes(p.category))
+      );
 
       // Apply additional filters
       if (filters.sizes.length > 0) {
@@ -46,7 +57,7 @@ export default function CollectionPage() {
 
       setFilteredProducts(filtered);
     }
-  }, [categorySlug, products, filters]);
+  }, [categorySlug, products, categories, filters]);
 
   const category = categories.find(c => c.slug === categorySlug);
   const subcategories = categories.filter(c => c.parent_id === category?.id);
@@ -65,55 +76,52 @@ export default function CollectionPage() {
   ).sort();
 
   const priceRange = {
-    min: Math.min(...filteredProducts.map(p => p.salePrice || p.price || 0)),
-    max: Math.max(...filteredProducts.map(p => p.salePrice || p.price || 0)),
+    min: Math.min(...filteredProducts.map(p => p.salePrice || p.price || 0), 0),
+    max: Math.max(...filteredProducts.map(p => p.salePrice || p.price || 0), 10000),
   };
+
+  if (!category) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Category Not Found</h2>
+          <Link to="/" className="text-purple-600 hover:underline">Back to Home</Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Hero Banner */}
-      <div className="relative h-[40vh] overflow-hidden bg-black">
-        <img
-          src={category?.cover_image_url || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=1920&h=1080&fit=crop'}
-          alt={category?.name}
-          className="w-full h-full object-cover opacity-60"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-8 text-white">
-          <div className="max-w-7xl mx-auto">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <h1 className="text-4xl md:text-5xl font-display font-bold mb-2">
-                {category?.name}
-              </h1>
-              <p className="text-white/80 text-lg">{category?.description}</p>
-            </motion.div>
-          </div>
-        </div>
-      </div>
+      {/* Hero Section */}
+      <CollectionHero category={category} />
 
       {/* Subcategory Navigation */}
       {subcategories.length > 0 && (
-        <div className="bg-white border-b sticky top-16 z-10">
+        <div className="bg-white border-b sticky top-[64px] z-10 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex gap-4 overflow-x-auto">
+            <div className="flex gap-3 overflow-x-auto">
               <Link
                 to={`/shop/${categorySlug}`}
-                className="px-4 py-2 bg-black text-white rounded-full text-sm font-medium whitespace-nowrap"
+                className="px-5 py-2.5 bg-black text-white rounded-full text-sm font-medium whitespace-nowrap hover:bg-gray-800 transition-colors"
               >
-                All
+                All {category.name}
               </Link>
-              {subcategories.map(sub => (
-                <Link
-                  key={sub.slug}
-                  to={`/shop/${sub.slug}`}
-                  className="px-4 py-2 border rounded-full text-sm font-medium whitespace-nowrap hover:bg-black hover:text-white transition-colors"
-                >
-                  {sub.name}
-                </Link>
-              ))}
+              {subcategories.map(sub => {
+                const productCount = products.filter(p => p.category === sub.slug).length;
+                return (
+                  <Link
+                    key={sub.slug}
+                    to={`/shop/${sub.slug}`}
+                    className="px-5 py-2.5 border rounded-full text-sm font-medium whitespace-nowrap hover:bg-black hover:text-white transition-colors flex items-center gap-2"
+                  >
+                    {sub.name}
+                    <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                      {productCount}
+                    </span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
