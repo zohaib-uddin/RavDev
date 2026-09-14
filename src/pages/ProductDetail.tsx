@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, Truck, Shield, RefreshCw, Star, ChevronRight, Minus, Plus, ChevronLeft, Check } from 'lucide-react';
@@ -6,12 +6,17 @@ import { useStore } from '../store/useStore';
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { products, addToCart, wishlist, toggleWishlist, reviews } = useStore();
+  const { products, addToCart, wishlist, toggleWishlist, reviews, fetchProducts } = useStore();
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [quantity, setQuantity] = useState(1);
   const [activeImage, setActiveImage] = useState(0);
   const [addedToCart, setAddedToCart] = useState(false);
+  
+  // Fetch products from API
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const product = products.find(p => p.id === id);
   const productReviews = reviews.filter(r => r.product_id === id);

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Star, Truck, Shield, RefreshCw, Award, Zap, Instagram, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,8 +13,15 @@ const heroSlides = [
 ];
 
 export default function Home() {
-  const { products, reviews } = useStore();
+  const { products, reviews, fetchProducts, fetchCategories } = useStore();
   const [currentSlide, setCurrentSlide] = useState(0);
+  
+  // Fetch data from API on component mount
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
+  
   const featuredProducts = products.filter(p => p.isFeatured);
   const newProducts = products.filter(p => p.isNew);
   const bestsellers = products.filter(p => p.isBestseller);
