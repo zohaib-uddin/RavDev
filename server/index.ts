@@ -134,91 +134,136 @@ app.get('/api/products', async (req, res) => {
   try {
     console.log('📦 Fetching products from database...');
     
-    // Simplified query - only essential columns
+    // Step 1: Check if products table exists and has data
+    const countResult = await sql`SELECT COUNT(*) as count FROM products`;
+    console.log(`📊 Total products in database: ${countResult[0].count}`);
+    
+    if (countResult[0].count === 0) {
+      console.log('⚠️ No products found in database!');
+      return res.json([]);
+    }
+    
+    // Step 2: Fetch products with simple query
+    console.log('🔍 Executing SELECT query...');
     const products = await sql`
-      SELECT * FROM products 
+      SELECT 
+        id, name, slug, description, 
+        base_price, compare_at_price, 
+        is_active, category_id, 
+        brand, fabric, fit, sku,
+        is_new_arrival, is_bestseller, is_featured, is_best_seller,
+        badge, images, image_url, attributes,
+        fabric_composition, fabric_finish, graphic_print,
+        garment_specs, garment_care, shipping_info,
+        meta_title, meta_description, focus_keywords,
+        status, is_draft, created_at, updated_at
+      FROM products 
       WHERE is_active = true 
       ORDER BY created_at DESC
       LIMIT 100
     `;
     
-    console.log(`✅ Found ${products.length} products`);
+    console.log(`✅ Raw products fetched: ${products.length}`);
     
-    // Get categories for mapping
+    // Step 3: Get categories for mapping
     const categories = await sql`SELECT id, name, slug FROM categories`;
     const categoryMap = new Map(categories.map((c: any) => [c.id, c]));
+    console.log(`📂 Categories loaded: ${categories.length}`);
     
-    // Transform data to match frontend expectations
+    // Step 4: Transform data safely
     const transformedProducts = products.map((p: any) => {
-      const category = categoryMap.get(p.category_id);
-      
-      return {
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        description: p.description || '',
-        base_price: parseFloat(p.base_price),
-        compare_at_price: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
-        is_active: p.is_active,
-        category_id: p.category_id,
-        category_slug: category?.slug || 'uncategorized',
-        category_name: category?.name || 'Uncategorized',
-        brand: p.brand || 'RAVENZA',
-        fabric: p.fabric || null,
-        fit: p.fit || null,
-        sku: p.sku || null,
-        is_new_arrival: p.is_new_arrival || false,
-        is_bestseller: p.is_bestseller || false,
-        is_featured: p.is_featured || false,
-        is_best_seller: p.is_best_seller || false,
-        badge: p.badge || null,
-        images: p.images || [],
-        image_url: p.image_url || null,
-        attributes: p.attributes || { sizes: ['S', 'M', 'L', 'XL'], colors: ['Black'] },
-        fabric_composition: p.fabric_composition || null,
-        fabric_finish: p.fabric_finish || null,
-        graphic_print: p.graphic_print || null,
-        garment_specs: p.garment_specs || null,
-        garment_care: p.garment_care || null,
-        shipping_info: p.shipping_info || null,
-        meta_title: p.meta_title || null,
-        meta_description: p.meta_description || null,
-        focus_keywords: p.focus_keywords || null,
-        status: p.status || 'active',
-        is_draft: p.is_draft || false,
-        created_at: p.created_at,
-        updated_at: p.updated_at,
-        // Computed fields for frontend
-        price: parseFloat(p.base_price),
-        salePrice: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
-        image: p.image_url || (p.images && p.images[0]) || '',
-        sizes: p.attributes?.sizes || ['S', 'M', 'L', 'XL'],
-        colors: p.attributes?.colors || ['Black'],
-        stockCount: 50,
-        inStock: true,
-        isNew: p.is_new_arrival,
-        isFeatured: p.is_featured,
-        isBestseller: p.is_bestseller || p.is_best_seller,
-        details: [
-          p.fabric_composition,
-          p.fit && `Fit: ${p.fit}`,
-          p.garment_care && `Care: ${p.garment_care}`,
-          'Made in Pakistan'
-        ].filter(Boolean),
-        material: p.fabric_composition || p.fabric || 'Premium Cotton',
-        category: category?.slug || 'uncategorized'
-      };
-    });
+      try {
+        const category = categoryMap.get(p.category_id);
+        
+        // Safely parse JSON fields
+        let images = [];
+        try {
+          images = typeof p.images === 'string' ? JSON.parse(p.images) : (p.images || []);
+        } catch (e) {
+          images = [];
+        }
+        
+        let attributes = { sizes: ['S', 'M', 'L', 'XL'], colors: ['Black'] };
+        try {
+          attributes = typeof p.attributes === 'string' ? JSON.parse(p.attributes) : (p.attributes || attributes);
+        } catch (e) {
+          attributes = { sizes: ['S', 'M', 'L', 'XL'], colors: ['Black'] };
+        }
+        
+        return {
+          id: p.id,
+          name: p.name || '',
+          slug: p.slug || '',
+          description: p.description || '',
+          base_price: parseFloat(p.base_price) || 0,
+          compare_at_price: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
+          is_active: p.is_active,
+          category_id: p.category_id,
+          category_slug: category?.slug || 'uncategorized',
+          category_name: category?.name || 'Uncategorized',
+          brand: p.brand || 'RAVENZA',
+          fabric: p.fabric || null,
+          fit: p.fit || null,
+          sku: p.sku || null,
+          is_new_arrival: p.is_new_arrival || false,
+          is_bestseller: p.is_bestseller || false,
+          is_featured: p.is_featured || false,
+          is_best_seller: p.is_best_seller || false,
+          badge: p.badge || null,
+          images: images,
+          image_url: p.image_url || null,
+          attributes: attributes,
+          fabric_composition: p.fabric_composition || null,
+          fabric_finish: p.fabric_finish || null,
+          graphic_print: p.graphic_print || null,
+          garment_specs: p.garment_specs || null,
+          garment_care: p.garment_care || null,
+          shipping_info: p.shipping_info || null,
+          meta_title: p.meta_title || null,
+          meta_description: p.meta_description || null,
+          focus_keywords: p.focus_keywords || null,
+          status: p.status || 'active',
+          is_draft: p.is_draft || false,
+          created_at: p.created_at,
+          updated_at: p.updated_at,
+          // Computed fields for frontend
+          price: parseFloat(p.base_price) || 0,
+          salePrice: p.compare_at_price ? parseFloat(p.compare_at_price) : null,
+          image: p.image_url || (images && images[0]) || '',
+          sizes: attributes?.sizes || ['S', 'M', 'L', 'XL'],
+          colors: attributes?.colors || ['Black'],
+          stockCount: 50,
+          inStock: true,
+          isNew: p.is_new_arrival,
+          isFeatured: p.is_featured,
+          isBestseller: p.is_bestseller || p.is_best_seller,
+          details: [
+            p.fabric_composition,
+            p.fit && `Fit: ${p.fit}`,
+            p.garment_care && `Care: ${p.garment_care}`,
+            'Made in Pakistan'
+          ].filter(Boolean),
+          material: p.fabric_composition || p.fabric || 'Premium Cotton',
+          category: category?.slug || 'uncategorized'
+        };
+      } catch (transformError) {
+        console.error('❌ Error transforming product:', p.id, transformError);
+        return null;
+      }
+    }).filter(Boolean); // Remove any null entries
+    
+    console.log(`✅ Transformed products: ${transformedProducts.length}`);
+    console.log('📤 Sending products to frontend...');
     
     res.json(transformedProducts);
   } catch (error: any) {
     console.error('❌ Get products error:', error);
-    console.error('Error details:', error.message);
-    console.error('Full error:', error);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ 
       message: 'Server error fetching products', 
       error: error.message,
-      stack: error.stack
+      hint: 'Check server console for detailed error'
     });
   }
 });
