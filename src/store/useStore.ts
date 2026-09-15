@@ -108,6 +108,7 @@ export interface Review {
   comment: string;
   is_approved: boolean;
   date: string;
+  images?: string[];
 }
 
 export interface Category {
@@ -152,6 +153,7 @@ interface StoreState {
   updateProduct: (id: string, data: Partial<Product>) => void;
   addProduct: (product: Product) => void;
   deleteProduct: (id: string) => void;
+  addReview: (review: Review) => void;
 }
 
 export const useStore = create<StoreState>((set, get) => ({
@@ -300,5 +302,10 @@ export const useStore = create<StoreState>((set, get) => ({
   deleteProduct: (id) => {
     set({ products: get().products.filter(p => p.id !== id) });
     api.deleteProduct(id).catch(() => {});
+  },
+
+  addReview: (review) => {
+    set({ reviews: [...get().reviews, review] });
+    // In production, this would call api.addReview(review)
   },
 }));
