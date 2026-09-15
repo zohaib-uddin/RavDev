@@ -2,21 +2,48 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 
-interface FAQ {
-  id: string;
-  question: string;
-  answer: string;
-  category: string;
-}
+const staticFAQs = [
+  {
+    id: '1',
+    question: 'What is your return policy?',
+    answer: 'We offer a 7-day easy return policy. Items must be unworn, unwashed, with original tags attached. Contact our support team to initiate a return.',
+    category: 'Shipping & Returns',
+  },
+  {
+    id: '2',
+    question: 'How long does delivery take?',
+    answer: 'Standard delivery takes 3-5 business days for major cities and 5-7 days for other areas. Express delivery (1-2 days) is available for select locations.',
+    category: 'Shipping & Returns',
+  },
+  {
+    id: '3',
+    question: 'Do you offer cash on delivery?',
+    answer: 'Yes! COD is available across Pakistan. A small COD handling fee of Rs.100 may apply.',
+    category: 'Payment',
+  },
+  {
+    id: '4',
+    question: 'What sizes do you offer?',
+    answer: 'We offer sizes from S to 3XL depending on the product. Check the size guide on each product page for detailed measurements.',
+    category: 'Sizing',
+  },
+  {
+    id: '5',
+    question: 'Are your products unisex?',
+    answer: 'Most of our products are designed as unisex. Check the product description for specific fit details.',
+    category: 'Sizing',
+  },
+  {
+    id: '6',
+    question: 'How do I track my order?',
+    answer: 'Once your order is shipped, you will receive a tracking number via email and SMS. You can also track your order on our Track Order page.',
+    category: 'Shipping & Returns',
+  },
+];
 
-interface FAQSectionProps {
-  faqs: FAQ[];
-}
-
-export default function FAQSection({ faqs }: FAQSectionProps) {
+export default function FAQSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
-
-  if (faqs.length === 0) return null;
+  const faqs = staticFAQs;
 
   return (
     <section className="py-16">

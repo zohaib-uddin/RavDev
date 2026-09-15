@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useStore } from '../store/useStore';
 import {
   HeroBanner,
-  CategoryCards,
+  WarmChapterSection,
   CollectionsInFocus,
   ProductGrid,
   JournalSection,
@@ -12,42 +12,18 @@ import {
 } from '../components/home';
 
 export default function Home() {
-  const { products, reviews, fetchProducts, fetchCategories } = useStore();
-  const [journalEntries, setJournalEntries] = useState([]);
-  const [faqs, setFaqs] = useState([]);
+  const { products, reviews, fetchProducts, fetchCategories, fetchWarmChapters } = useStore();
 
   useEffect(() => {
     fetchProducts();
     fetchCategories();
-    // Fetch journal entries and FAQs from API
-    fetchJournalEntries();
-    fetchFAQs();
+    fetchWarmChapters();
   }, []);
-
-  const fetchJournalEntries = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/journal');
-      const data = await response.json();
-      setJournalEntries(data);
-    } catch (error) {
-      console.error('Failed to fetch journal entries:', error);
-    }
-  };
-
-  const fetchFAQs = async () => {
-    try {
-      const response = await fetch('http://localhost:3001/api/faqs');
-      const data = await response.json();
-      setFaqs(data);
-    } catch (error) {
-      console.error('Failed to fetch FAQs:', error);
-    }
-  };
 
   return (
     <div>
       <HeroBanner />
-      <CategoryCards />
+      <WarmChapterSection />
       <CollectionsInFocus />
       
       <ProductGrid
@@ -71,9 +47,9 @@ export default function Home() {
         link="/shop?filter=featured"
       />
 
-      <JournalSection entries={journalEntries} />
+      <JournalSection />
       <ReviewsCarousel reviews={reviews} />
-      <FAQSection faqs={faqs} />
+      <FAQSection />
       <NewsletterSection />
     </div>
   );

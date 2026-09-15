@@ -124,6 +124,19 @@ export interface Category {
   tag: string | null;
 }
 
+export interface WarmChapter {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  slug: string;
+  image_url: string;
+  product_ids: string[];
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // Empty initial state - data will be fetched from API
 
 interface StoreState {
@@ -134,6 +147,7 @@ interface StoreState {
   categories: Category[];
   orders: Order[];
   reviews: Review[];
+  warmChapters: WarmChapter[];
   isLoading: boolean;
   apiAvailable: boolean;
   
@@ -148,6 +162,7 @@ interface StoreState {
   fetchProducts: () => Promise<void>;
   fetchCategories: () => Promise<void>;
   fetchOrders: () => Promise<void>;
+  fetchWarmChapters: () => Promise<void>;
   addOrder: (order: Order) => void;
   updateOrderStatus: (orderId: string, status: string) => void;
   updateProduct: (id: string, data: Partial<Product>) => void;
@@ -164,6 +179,7 @@ export const useStore = create<StoreState>((set, get) => ({
   categories: [],
   orders: [],
   reviews: [],
+  warmChapters: [],
   isLoading: false,
   apiAvailable: false,
 
@@ -279,8 +295,21 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
 
-  addOrder: (order) => {
-    set({ orders: [...get().orders, order] });
+  fetchWarmChapters: async () => {
+    try {
+      console.log('🔄 Fetching warm chapters from API...');
+      const response = await fetch('http://localhost:3001/api/warm-chapters');
+      const warmChapters = await response.json();
+      console.log(`✅ Received ${warmChapters.length} warm chapters from API`);
+      set({ warmChapters, apiAvailable: true });
+    } catch (error: any) {
+      console.error('❌ Failed to fetch warm chapters:', error);
+      console.error('Error details:', error.message);
+      set({ apiAvailable: false });
+    }
+  },
+  
+  addOrder: (order) => {    set({ orders: [...get().orders, order] });
     api.createOrder(order).catch(() => {});
   },
 

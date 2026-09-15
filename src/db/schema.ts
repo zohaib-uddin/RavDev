@@ -340,3 +340,21 @@ export const auditLogs = pgTable('audit_logs', {
   entityIdx: index('audit_entity_idx').on(table.entity_type, table.entity_id),
   createdIdx: index('audit_created_idx').on(table.created_at),
 }));
+
+// ==================== WARM CHAPTERS ====================
+export const warmChapters = pgTable('warm_chapters', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: varchar('title', { length: 255 }).notNull(),
+  subtitle: varchar('subtitle', { length: 255 }),
+  slug: varchar('slug', { length: 255 }).notNull().unique(),
+  image_url: varchar('image_url', { length: 500 }).notNull(),
+  product_ids: jsonb('product_ids').default([]),
+  display_order: integer('display_order').notNull().default(0),
+  is_active: boolean('is_active').notNull().default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  slugIdx: uniqueIndex('warm_chapters_slug_idx').on(table.slug),
+  activeIdx: index('warm_chapters_active_idx').on(table.is_active),
+  orderIdx: index('warm_chapters_order_idx').on(table.display_order),
+}));

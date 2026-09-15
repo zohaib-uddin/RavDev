@@ -1,23 +1,41 @@
 import { motion } from 'framer-motion';
 import { Calendar, User } from 'lucide-react';
 
-interface JournalEntry {
-  id: string;
-  title: string;
-  subtitle: string;
-  content: string;
-  featured_image: string;
-  category: string;
-  author: string;
-  published_date: string;
-}
+const staticEntries = [
+  {
+    id: '1',
+    title: 'The Birth of Ravenza',
+    subtitle: 'Our journey from concept to reality',
+    content: 'Ravenza was born from a simple vision: to create streetwear that speaks to the bold, the creative, and the unapologetically authentic. What started as a passion project in a small studio has grown into a movement that resonates with thousands across Pakistan.',
+    featured_image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=600&fit=crop',
+    category: 'Brand Story',
+    author: 'Ravenza Team',
+    published_date: '2024-01-15',
+  },
+  {
+    id: '2',
+    title: 'Behind the Design: Shadow Realm',
+    subtitle: 'The inspiration behind our best-selling collection',
+    content: 'The Shadow Realm collection draws inspiration from urban mythology and the duality of modern life. Each piece is carefully crafted to represent the balance between light and shadow, comfort and edge.',
+    featured_image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&h=600&fit=crop',
+    category: 'Design',
+    author: 'Creative Director',
+    published_date: '2024-02-01',
+  },
+  {
+    id: '3',
+    title: 'Sustainability in Streetwear',
+    subtitle: 'Our commitment to responsible fashion',
+    content: 'At Ravenza, we believe that great fashion shouldnt come at the cost of our planet. We are committed to using sustainable materials and ethical manufacturing processes wherever possible.',
+    featured_image: 'https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=600&fit=crop',
+    category: 'Sustainability',
+    author: 'Ravenza Team',
+    published_date: '2024-03-01',
+  },
+];
 
-interface JournalSectionProps {
-  entries: JournalEntry[];
-}
-
-export default function JournalSection({ entries }: JournalSectionProps) {
-  if (entries.length === 0) return null;
+export default function JournalSection() {
+  const entries = staticEntries;
 
   return (
     <section className="py-16 bg-gray-50">

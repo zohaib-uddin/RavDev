@@ -24,7 +24,7 @@ export default function MegaMenu({ category }: MegaMenuProps) {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 10 }}
       transition={{ duration: 0.2 }}
-      className="absolute top-full left-1/2 -translate-x-1/2 w-[1200px] bg-white shadow-2xl border-t-2 border-black z-50"
+      className="fixed top-[120px] left-1/2 -translate-x-1/2 w-[1200px] bg-white shadow-2xl border-t-2 border-black z-50"
     >
       <div className="grid grid-cols-12 gap-6 p-8">
         {/* Left Side - Subcategories */}
