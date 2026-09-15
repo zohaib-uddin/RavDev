@@ -348,6 +348,26 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
+// ==================== WARM CHAPTERS ROUTES ====================
+
+app.get('/api/warm-chapters', async (req, res) => {
+  try {
+    console.log('🔥 Fetching warm chapters from database...');
+    
+    const warmChapters = await sql`
+      SELECT * FROM warm_chapters 
+      WHERE is_active = true 
+      ORDER BY display_order ASC
+    `;
+    
+    console.log(`✅ Found ${warmChapters.length} warm chapters`);
+    res.json(warmChapters);
+  } catch (error: any) {
+    console.error('❌ Get warm chapters error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // ==================== ORDERS ROUTES ====================
 
 app.get('/api/orders', authenticateToken, async (req, res) => {
