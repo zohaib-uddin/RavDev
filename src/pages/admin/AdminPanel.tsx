@@ -17,7 +17,13 @@ import {
   AdminJournal,
   AdminOrders,
   AdminNewsletter,
+  AnalyticsDashboard,
+  InventoryManager,
+  BulkImportExport,
+  StockAlerts,
+  EmailMarketing,
 } from '../../components/admin';
+import LanguageSwitcher from '../../components/LanguageSwitcher';
 
 export default function AdminPanel() {
   const { products, orders, categories, reviews, updateOrderStatus, deleteProduct, logout, fetchProducts, fetchOrders, fetchCategories } = useStore();
@@ -44,7 +50,10 @@ export default function AdminPanel() {
 
   const sections = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
     { id: 'inventory', label: 'Inventory', icon: Package },
+    { id: 'stock-alerts', label: 'Stock Alerts', icon: AlertTriangle },
+    { id: 'import-export', label: 'Import/Export', icon: FileText },
     { id: 'orders', label: 'Orders', icon: ShoppingBag },
     { id: 'categories', label: 'Categories', icon: Box },
     { id: 'collections', label: 'Collections', icon: Package },
@@ -52,6 +61,7 @@ export default function AdminPanel() {
     { id: 'faqs', label: 'FAQs', icon: MessageSquare },
     { id: 'journal', label: 'Journal', icon: BookOpen },
     { id: 'newsletter', label: 'Newsletter', icon: Mail },
+    { id: 'email-marketing', label: 'Email Marketing', icon: Mail },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'discounts', label: 'Discounts', icon: Percent },
     { id: 'seo', label: 'SEO Settings', icon: Globe },
@@ -198,87 +208,20 @@ export default function AdminPanel() {
               </div>
             )}
 
+            {/* Analytics */}
+            {activeSection === 'analytics' && <AnalyticsDashboard />}
+
+            {/* Stock Alerts */}
+            {activeSection === 'stock-alerts' && <StockAlerts />}
+
+            {/* Import/Export */}
+            {activeSection === 'import-export' && <BulkImportExport />}
+
+            {/* Email Marketing */}
+            {activeSection === 'email-marketing' && <EmailMarketing />}
+
             {/* Inventory */}
-            {activeSection === 'inventory' && (
-              <div>
-                <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                  <h2 className="text-2xl font-bold">Inventory Management</h2>
-                  <button onClick={() => { setEditingProduct(null); setShowProductForm(true); }} className="flex items-center gap-2 bg-black text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-800 transition-colors">
-                    <Plus size={16} /> Add Product
-                  </button>
-                </div>
-
-                <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                  <div className="p-4 border-b flex flex-col md:flex-row gap-3">
-                    <div className="relative flex-1">
-                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                      <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} placeholder="Search products..." className="w-full pl-10 pr-4 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-black/10" />
-                    </div>
-                    <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)} className="px-4 py-2.5 border rounded-xl text-sm">
-                      <option value="">All Categories</option>
-                      {categories.map(c => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-                    </select>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50">
-                        <tr>
-                          <th className="text-left py-3 px-4">Product</th>
-                          <th className="text-left py-3 px-4">Category</th>
-                          <th className="text-left py-3 px-4">Price</th>
-                          <th className="text-left py-3 px-4">Stock</th>
-                          <th className="text-left py-3 px-4">Status</th>
-                          <th className="text-left py-3 px-4">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredProducts.map(product => (
-                          <tr key={product.id} className="border-b hover:bg-gray-50">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-3">
-                                <img src={product.image || product.image_url || ''} alt="" className="w-10 h-10 rounded-lg object-cover" />
-                                <div>
-                                  <span className="font-medium line-clamp-1">{product.name}</span>
-                                  <p className="text-xs text-gray-400">{product.sku}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-gray-500 capitalize">{product.category?.replace('-', ' ')}</td>
-                            <td className="py-3 px-4">
-                              <span className="font-medium">Rs.{(product.salePrice || product.price || 0).toLocaleString()}</span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`font-medium ${(product.stockCount || 0) < 20 ? 'text-red-600' : ''}`}>
-                                {product.stockCount || 0}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className={`text-xs font-bold px-2 py-1 rounded-full ${product.inStock !== false ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                {product.inStock !== false ? 'ACTIVE' : 'INACTIVE'}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex gap-1">
-                                <button onClick={() => { setEditingProduct(product); setShowProductForm(true); }} className="p-2 hover:bg-gray-100 rounded-lg transition-colors" title="Edit">
-                                  <Edit size={14} className="text-gray-500" />
-                                </button>
-                                <button onClick={() => { if (confirm('Delete this product?')) deleteProduct(product.id); }} className="p-2 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
-                                  <Trash2 size={14} className="text-red-500" />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div className="p-4 border-t text-sm text-gray-500">
-                    Showing {filteredProducts.length} of {products.length} products
-                  </div>
-                </div>
-              </div>
-            )}
+            {activeSection === 'inventory' && <InventoryManager />}
 
             {/* Orders */}
             {activeSection === 'orders' && <AdminOrders />}

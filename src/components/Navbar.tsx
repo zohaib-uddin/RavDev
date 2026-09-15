@@ -5,6 +5,7 @@ import { Search, Heart, ShoppingBag, User, Menu, X, Shield } from 'lucide-react'
 import { useStore } from '../store/useStore';
 import MegaMenu from './MegaMenu';
 import SearchModal from './SearchModal';
+import LanguageSwitcher from './LanguageSwitcher';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -89,6 +90,7 @@ export default function Navbar() {
 
             {/* Right Side - Icons */}
             <div className="flex items-center gap-3">
+              <LanguageSwitcher />
               <Link to="/dashboard" className="p-2 hover:bg-gray-100 rounded-full transition-colors hidden sm:block">
                 <User size={20} />
               </Link>
