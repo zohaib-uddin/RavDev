@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, Truck, Shield, RefreshCw, Star, ChevronRight, Minus, Plus, ChevronDown, ChevronLeft, Check, Package, Ruler, Shirt, Scissors } from 'lucide-react';
+import { Heart, ShoppingBag, Truck, Shield, RefreshCw, Star, ChevronRight, Minus, Plus, ChevronDown, ChevronLeft, Check, Package, Ruler, Shirt, Scissors, Zap } from 'lucide-react';
 import { useStore } from '../store/useStore';
+import SizeGuideModal from '../components/SizeGuideModal';
 
 export default function ProductDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const { products, addToCart, wishlist, toggleWishlist, reviews, fetchProducts } = useStore();
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -13,6 +15,7 @@ export default function ProductDetail() {
   const [activeImage, setActiveImage] = useState(0);
   const [addedToCart, setAddedToCart] = useState(false);
   const [expandedSpec, setExpandedSpec] = useState<string | null>('fabric');
+  const [showSizeGuide, setShowSizeGuide] = useState(false);
   
   useEffect(() => {
     fetchProducts();
@@ -21,6 +24,16 @@ export default function ProductDetail() {
   const product = products.find(p => p.id === id);
   const productReviews = reviews.filter(r => r.product_id === id);
   const relatedProducts = products.filter(p => p.category === product?.category && p.id !== id).slice(0, 4);
+
+  // Auto-select first size and color when product loads
+  useEffect(() => {
+    if (product && !selectedSize && product.sizes && product.sizes.length > 0) {
+      setSelectedSize(product.sizes[0]);
+    }
+    if (product && !selectedColor && product.colors && product.colors.length > 0) {
+      setSelectedColor(product.colors[0]);
+    }
+  }, [product]);
 
   if (!product) return (
     <div className="min-h-screen flex items-center justify-center">
@@ -40,6 +53,16 @@ export default function ProductDetail() {
     }
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 3000);
+  };
+
+  const handleBuyNow = () => {
+    if (!selectedSize) return;
+    // Add to cart first
+    for (let i = 0; i < quantity; i++) {
+      addToCart(product, selectedSize, selectedColor || product.colors?.[0] || 'Black');
+    }
+    // Navigate to checkout
+    navigate('/checkout');
   };
 
   const toggleSpec = (spec: string) => {
@@ -156,23 +179,54 @@ export default function ProductDetail() {
 
               <p className="text-gray-600 mt-4 leading-relaxed">{product.description}</p>
 
-              {/* Color Selection */}
+              {/* Color Selection - Circular Swatches */}
               <div className="mt-6">
                 <h4 className="font-bold text-sm mb-3">COLOR: <span className="font-normal text-gray-600">{selectedColor || product.colors?.[0]}</span></h4>
-                <div className="flex gap-2">
-                  {product.colors?.map(color => (
-                    <button 
-                      key={color} 
-                      onClick={() => setSelectedColor(color)} 
-                      className={`px-4 py-2.5 border rounded-xl text-sm font-medium transition-all ${
-                        (selectedColor || product.colors?.[0]) === color 
-                          ? 'border-black bg-black text-white' 
-                          : 'border-gray-200 hover:border-black'
-                      }`}
-                    >
-                      {color}
-                    </button>
-                  ))}
+                <div className="flex gap-3 flex-wrap">
+                  {product.colors?.map((color) => {
+                    const isSelected = (selectedColor || product.colors?.[0]) === color;
+                    // Map color names to hex codes (you can expand this mapping)
+                    const colorMap: Record<string, string> = {
+                      'Black': '#000000',
+                      'White': '#FFFFFF',
+                      'Red': '#EF4444',
+                      'Blue': '#3B82F6',
+                      'Green': '#10B981',
+                      'Yellow': '#F59E0B',
+                      'Purple': '#8B5CF6',
+                      'Pink': '#EC4899',
+                      'Orange': '#F97316',
+                      'Grey': '#6B7280',
+                      'Gray': '#6B7280',
+                      'Navy': '#1E3A8A',
+                      'Brown': '#92400E',
+                      'Beige': '#D4C5B9',
+                      'Charcoal': '#374151',
+                    };
+                    const hexColor = colorMap[color] || '#CCCCCC';
+                    
+                    return (
+                      <button
+                        key={color}
+                        onClick={() => setSelectedColor(color)}
+                        className={`relative w-12 h-12 rounded-full border-2 transition-all hover:scale-110 ${
+                          isSelected ? 'border-black scale-110' : 'border-gray-300'
+                        }`}
+                        style={{ backgroundColor: hexColor }}
+                        title={color}
+                      >
+                        {isSelected && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Check 
+                              size={20} 
+                              className={hexColor === '#FFFFFF' || hexColor === '#F5F5DC' || hexColor === '#F59E0B' ? 'text-black' : 'text-white'}
+                              strokeWidth={3}
+                            />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -180,7 +234,12 @@ export default function ProductDetail() {
               <div className="mt-6">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-bold text-sm">SIZE</h4>
-                  <button className="text-xs text-gray-500 underline hover:text-black">Size Guide</button>
+                  <button 
+                    onClick={() => setShowSizeGuide(true)}
+                    className="text-xs text-gray-500 underline hover:text-black"
+                  >
+                    Size Guide
+                  </button>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {product.sizes?.map(size => (
@@ -230,6 +289,18 @@ export default function ProductDetail() {
                   }`}
                 >
                   {addedToCart ? <><Check size={18} /> ADDED TO BAG ✓</> : <><ShoppingBag size={18} /> ADD TO BAG</>}
+                </motion.button>
+                <motion.button 
+                  whileTap={{ scale: 0.95 }} 
+                  onClick={handleBuyNow} 
+                  disabled={!selectedSize} 
+                  className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-full font-bold text-sm transition-all ${
+                    selectedSize 
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white hover:from-purple-700 hover:to-pink-700 shadow-lg' 
+                      : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                  }`}
+                >
+                  <Zap size={18} /> BUY NOW
                 </motion.button>
                 <button 
                   onClick={() => toggleWishlist(product.id)} 
@@ -434,6 +505,14 @@ export default function ProductDetail() {
           </div>
         )}
       </div>
+
+      {/* Size Guide Modal */}
+      {showSizeGuide && (
+        <SizeGuideModal
+          product={product}
+          onClose={() => setShowSizeGuide(false)}
+        />
+      )}
     </div>
   );
 }
