@@ -368,6 +368,48 @@ app.get('/api/warm-chapters', async (req, res) => {
   }
 });
 
+// ==================== COLLECTIONS ROUTES ====================
+
+app.get('/api/collections', async (req, res) => {
+  try {
+    console.log('📚 Fetching collections from database...');
+    
+    const collections = await sql`
+      SELECT * FROM collections 
+      WHERE is_active = true 
+      ORDER BY display_order ASC
+    `;
+    
+    console.log(`✅ Found ${collections.length} collections`);
+    res.json(collections);
+  } catch (error: any) {
+    console.error('❌ Get collections error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+app.get('/api/collections/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    console.log(`📚 Fetching collection by slug: ${slug}`);
+    
+    const collections = await sql`
+      SELECT * FROM collections 
+      WHERE slug = ${slug} AND is_active = true
+    `;
+    
+    if (collections.length === 0) {
+      return res.status(404).json({ message: 'Collection not found' });
+    }
+    
+    console.log(`✅ Found collection: ${collections[0].name}`);
+    res.json(collections[0]);
+  } catch (error: any) {
+    console.error('❌ Get collection error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // ==================== ORDERS ROUTES ====================
 
 app.get('/api/orders', authenticateToken, async (req, res) => {

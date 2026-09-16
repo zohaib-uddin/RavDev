@@ -135,7 +135,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       onMouseLeave={handleMouseLeave}
     >
       {/* Product Image Container - 16:9 ratio */}
-      <Link to={`/product/${product.id}`} className="block">
+      <Link to={`/products/${product.slug}`} className="block">
         <div className="relative overflow-hidden rounded-xl aspect-[16/9] bg-gray-100 border-2 border-gray-200 group-hover:border-black transition-all duration-300">
           {/* Product Image */}
           <motion.img
@@ -297,7 +297,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
       {/* Product Info */}
       <div className="mt-3 px-1">
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/products/${product.slug}`}>
           <h3 className="text-sm font-normal text-gray-800 line-clamp-2 hover:text-black transition-colors">
             {product.name}
           </h3>
@@ -457,7 +457,7 @@ function QuickViewModal({ product, onClose }: { product: any; onClose: () => voi
                 Add to Cart
               </button>
               <Link
-                to={`/product/${product.id}`}
+                to={`/products/${product.slug}`}
                 onClick={onClose}
                 className="flex-1 border-2 border-black text-black py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors text-center"
               >

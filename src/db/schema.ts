@@ -111,42 +111,28 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   orderItems: many(orderItems),
 }));
 
-// ==================== COLLECTIONS ====================
+// ==================== COLLECTIONS (Unified) ====================
 export const collections = pgTable('collections', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 100 }).notNull(),
-  slug: varchar('slug', { length: 120 }).notNull().unique(),
-  type: varchar('type', { length: 20 }).notNull().default('manual'),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 255 }).notNull().unique(),
+  type: varchar('type', { length: 50 }).notNull(), // 'category', 'warm_chapter', 'collection_focus'
   description: text('description'),
-  cover_image_url: varchar('cover_image_url', { length: 500 }),
+  image_url: varchar('image_url', { length: 500 }),
+  product_ids: jsonb('product_ids').default([]),
+  display_order: integer('display_order').notNull().default(0),
   is_active: boolean('is_active').notNull().default(true),
-  sort_order: integer('sort_order').notNull().default(0),
-  
-  // Display flags
-  show_in_focus: boolean('show_in_focus').default(false),
-  show_explore_banner: boolean('show_explore_banner').default(false),
-  explore_title: varchar('explore_title', { length: 200 }),
-  show_on_home_chapter: boolean('show_on_home_chapter').default(false),
-  chapter_title: varchar('chapter_title', { length: 150 }).default('WARM CHAPTER I'),
-  edition_name: varchar('edition_name', { length: 100 }).default('MAIN EDITION'),
-  
-  // Automation rules
-  rules: jsonb('rules'),
-  rules_match: varchar('rules_match', { length: 10 }).default('all'),
-  
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   slugIdx: uniqueIndex('collections_slug_idx').on(table.slug),
+  typeIdx: index('collections_type_idx').on(table.type),
   activeIdx: index('collections_active_idx').on(table.is_active),
-  showInFocusIdx: index('collections_show_in_focus_idx').on(table.show_in_focus),
 }));
 
-export const collectionsRelations = relations(collections, ({ many }) => ({
-  products: many(collectionProducts),
-}));
+// Collections now use product_ids array instead of many-to-many relation
 
-// ==================== COLLECTION PRODUCTS (Many-to-Many) ====================
+// ==================== COLLECTION PRODUCTS (Legacy - kept for backward compatibility) ====================
 export const collectionProducts = pgTable('collection_products', {
   id: uuid('id').primaryKey().defaultRandom(),
   collection_id: uuid('collection_id').notNull(),

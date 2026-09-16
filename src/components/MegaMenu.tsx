@@ -37,7 +37,7 @@ export default function MegaMenu({ category }: MegaMenuProps) {
                 return (
                   <Link
                     key={subcat.slug}
-                    to={`/shop/${subcat.slug}`}
+                    to={`/collections/${subcat.slug}`}
                     className="block group"
                   >
                     <div className="flex justify-between items-center hover:bg-gray-50 px-3 py-2 rounded-lg transition-colors">
@@ -57,7 +57,7 @@ export default function MegaMenu({ category }: MegaMenuProps) {
           )}
           
           <Link
-            to={`/shop/${category.slug}`}
+            to={`/collections/${category.slug}`}
             className="mt-6 inline-flex items-center gap-2 text-sm font-bold text-black hover:gap-3 transition-all"
           >
             View All <ArrowRight size={16} />
@@ -121,7 +121,7 @@ export default function MegaMenu({ category }: MegaMenuProps) {
               <p className="text-sm text-gray-600 mb-4">{category.description}</p>
             )}
             <Link
-              to={`/shop/${category.slug}`}
+              to={`/collections/${category.slug}`}
               className="inline-flex items-center gap-2 bg-black text-white px-6 py-3 rounded-full text-sm font-bold hover:bg-gray-800 transition-colors"
             >
               Explore Collection <ArrowRight size={16} />

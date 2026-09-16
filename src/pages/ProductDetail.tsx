@@ -6,7 +6,7 @@ import { useStore } from '../store/useStore';
 import SizeGuideModal from '../components/SizeGuideModal';
 
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { productSlug, id } = useParams(); // Support both slug and legacy id
   const navigate = useNavigate();
   const { products, addToCart, wishlist, toggleWishlist, reviews, fetchProducts } = useStore();
   const [selectedSize, setSelectedSize] = useState('');
@@ -21,9 +21,12 @@ export default function ProductDetail() {
     fetchProducts();
   }, []);
 
-  const product = products.find(p => p.id === id);
-  const productReviews = reviews.filter(r => r.product_id === id);
-  const relatedProducts = products.filter(p => p.category === product?.category && p.id !== id).slice(0, 4);
+  // Find product by slug (new) or by id (legacy)
+  const product = products.find(p => 
+    productSlug ? p.slug === productSlug : p.id === id
+  );
+  const productReviews = reviews.filter(r => r.product_id === product?.id);
+  const relatedProducts = products.filter(p => p.category === product?.category && p.id !== product?.id).slice(0, 4);
 
   // Auto-select first size and color when product loads
   useEffect(() => {
@@ -84,7 +87,7 @@ export default function ProductDetail() {
           <ChevronRight size={14} />
           <Link to="/shop" className="hover:text-black">Shop</Link>
           <ChevronRight size={14} />
-          <Link to={`/shop/${product.category}`} className="hover:text-black capitalize">
+          <Link to={`/collections/${product.category}`} className="hover:text-black capitalize">
             {product.category?.replace('-', ' ')}
           </Link>
           <ChevronRight size={14} />

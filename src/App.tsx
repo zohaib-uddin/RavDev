@@ -47,6 +47,10 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/shop" element={<Shop />} />
+                {/* New URL structure */}
+                <Route path="/collections/:categorySlug" element={<CollectionPage />} />
+                <Route path="/products/:productSlug" element={<ProductDetail />} />
+                {/* Legacy routes for backward compatibility */}
                 <Route path="/shop/:categorySlug" element={<CollectionPage />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
                 <Route path="/cart" element={<Cart />} />
