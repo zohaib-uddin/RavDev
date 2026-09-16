@@ -1,30 +1,50 @@
 import { X } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Product } from '../store/useStore';
 
 interface SizeGuideModalProps {
-  isOpen: boolean;
+  product: Product;
   onClose: () => void;
 }
 
-export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps) {
-  if (!isOpen) return null;
-
-  const sizeData = {
-    tops: [
-      { size: 'S', chest: '36-38', length: '27', shoulder: '17' },
-      { size: 'M', chest: '38-40', length: '28', shoulder: '18' },
-      { size: 'L', chest: '40-42', length: '29', shoulder: '19' },
-      { size: 'XL', chest: '42-44', length: '30', shoulder: '20' },
-      { size: '2XL', chest: '44-46', length: '31', shoulder: '21' },
-    ],
-    bottoms: [
-      { size: 'S', waist: '28-30', hip: '36-38', length: '40' },
-      { size: 'M', waist: '30-32', hip: '38-40', length: '41' },
-      { size: 'L', waist: '32-34', hip: '40-42', length: '42' },
-      { size: 'XL', waist: '34-36', hip: '42-44', length: '43' },
-      { size: '2XL', waist: '36-38', hip: '44-46', length: '44' },
-    ],
+export default function SizeGuideModal({ product, onClose }: SizeGuideModalProps) {
+  // Dynamic size guide based on product category
+  const getSizeGuide = () => {
+    const category = product.category?.toLowerCase() || '';
+    
+    // Check if product has custom size guide
+    if (product.size_guide && Object.keys(product.size_guide).length > 0) {
+      return product.size_guide;
+    }
+    
+    // Default size guides based on category
+    if (category.includes('trouser') || category.includes('pant') || category.includes('short')) {
+      return {
+        type: 'bottoms',
+        data: [
+          { size: 'S', waist: '28-30', hip: '36-38', length: '40' },
+          { size: 'M', waist: '30-32', hip: '38-40', length: '41' },
+          { size: 'L', waist: '32-34', hip: '40-42', length: '42' },
+          { size: 'XL', waist: '34-36', hip: '42-44', length: '43' },
+          { size: '2XL', waist: '36-38', hip: '44-46', length: '44' },
+        ],
+      };
+    }
+    
+    // Default to tops
+    return {
+      type: 'tops',
+      data: [
+        { size: 'S', chest: '36-38', length: '27', shoulder: '17' },
+        { size: 'M', chest: '38-40', length: '28', shoulder: '18' },
+        { size: 'L', chest: '40-42', length: '29', shoulder: '19' },
+        { size: 'XL', chest: '42-44', length: '30', shoulder: '20' },
+        { size: '2XL', chest: '44-46', length: '31', shoulder: '21' },
+      ],
+    };
   };
+
+  const sizeGuide = getSizeGuide();
 
   return (
     <motion.div
@@ -79,26 +99,49 @@ export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps)
             </div>
           </div>
 
-          {/* Tops Size Chart */}
+          {/* Size Chart */}
           <div>
-            <h3 className="text-lg font-bold mb-4">Tops & T-Shirts</h3>
+            <h3 className="text-lg font-bold mb-4">
+              {sizeGuide.type === 'bottoms' ? 'Bottoms & Trousers' : 'Tops & T-Shirts'}
+            </h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-black text-white">
                   <tr>
-                    <th className="py-3 px-4 text-left">Size</th>
-                    <th className="py-3 px-4 text-left">Chest (in)</th>
-                    <th className="py-3 px-4 text-left">Length (in)</th>
-                    <th className="py-3 px-4 text-left">Shoulder (in)</th>
+                    {sizeGuide.type === 'bottoms' ? (
+                      <>
+                        <th className="py-3 px-4 text-left">Size</th>
+                        <th className="py-3 px-4 text-left">Waist (in)</th>
+                        <th className="py-3 px-4 text-left">Hip (in)</th>
+                        <th className="py-3 px-4 text-left">Length (in)</th>
+                      </>
+                    ) : (
+                      <>
+                        <th className="py-3 px-4 text-left">Size</th>
+                        <th className="py-3 px-4 text-left">Chest (in)</th>
+                        <th className="py-3 px-4 text-left">Length (in)</th>
+                        <th className="py-3 px-4 text-left">Shoulder (in)</th>
+                      </>
+                    )}
                   </tr>
                 </thead>
                 <tbody>
-                  {sizeData.tops.map((row, i) => (
+                  {sizeGuide.data.map((row: any, i: number) => (
                     <tr key={row.size} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
                       <td className="py-3 px-4 font-bold">{row.size}</td>
-                      <td className="py-3 px-4">{row.chest}</td>
-                      <td className="py-3 px-4">{row.length}</td>
-                      <td className="py-3 px-4">{row.shoulder}</td>
+                      {sizeGuide.type === 'bottoms' ? (
+                        <>
+                          <td className="py-3 px-4">{row.waist}</td>
+                          <td className="py-3 px-4">{row.hip}</td>
+                          <td className="py-3 px-4">{row.length}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td className="py-3 px-4">{row.chest}</td>
+                          <td className="py-3 px-4">{row.length}</td>
+                          <td className="py-3 px-4">{row.shoulder}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -106,36 +149,22 @@ export default function SizeGuideModal({ isOpen, onClose }: SizeGuideModalProps)
             </div>
           </div>
 
-          {/* Bottoms Size Chart */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">Bottoms & Trousers</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-black text-white">
-                  <tr>
-                    <th className="py-3 px-4 text-left">Size</th>
-                    <th className="py-3 px-4 text-left">Waist (in)</th>
-                    <th className="py-3 px-4 text-left">Hip (in)</th>
-                    <th className="py-3 px-4 text-left">Length (in)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sizeData.bottoms.map((row, i) => (
-                    <tr key={row.size} className={i % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                      <td className="py-3 px-4 font-bold">{row.size}</td>
-                      <td className="py-3 px-4">{row.waist}</td>
-                      <td className="py-3 px-4">{row.hip}</td>
-                      <td className="py-3 px-4">{row.length}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Model Size Info */}
+          {product.model_size && (
+            <div className="bg-blue-50 rounded-xl p-6">
+              <h3 className="text-lg font-bold mb-3">Model Information</h3>
+              <p className="text-sm text-gray-700">{product.model_size}</p>
             </div>
-          </div>
+          )}
 
           {/* Fit Guide */}
           <div className="bg-purple-50 rounded-xl p-6">
             <h3 className="text-lg font-bold mb-3">Fit Guide</h3>
+            {product.fit && (
+              <p className="text-sm text-gray-700 mb-3">
+                <strong>This Product:</strong> {product.fit}
+              </p>
+            )}
             <ul className="space-y-2 text-sm text-gray-700">
               <li>• <strong>Oversized Fit:</strong> Relaxed and loose, 1-2 sizes larger than regular</li>
               <li>• <strong>Regular Fit:</strong> Classic fit, true to size</li>

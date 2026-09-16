@@ -49,6 +49,7 @@ export interface Product {
   // Variants
   attributes: { sizes: string[]; colors: string[] };
   variants_matrix?: any[];
+  size_guide?: any;
   
   // Status
   status: string;
