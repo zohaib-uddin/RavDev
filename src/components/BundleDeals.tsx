@@ -61,7 +61,9 @@ export default function BundleDeals({ currentProductId }: BundleDealsProps) {
     bundle.productIds.forEach(productId => {
       const product = products.find(p => p.id === productId);
       if (product) {
-        addToCart(product, product.sizes?.[0] || 'M', product.colors?.[0] || 'Black');
+        const firstColor = product.colors?.[0] as any;
+        const colorName = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
+        addToCart(product, product.sizes?.[0] || 'M', colorName);
       }
     });
   };

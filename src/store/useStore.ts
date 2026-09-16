@@ -47,9 +47,19 @@ export interface Product {
   image_url: string | null;
   
   // Variants
-  attributes: { sizes: string[]; colors: string[] };
-  variants_matrix?: any[];
+  attributes: { 
+    sizes: string[]; 
+    colors: Array<string | { name: string; hex: string }>; 
+  };
+  variants_matrix?: Array<{
+    size: string;
+    color: string;
+    price: number | null;
+    stock: number;
+    sku: string;
+  }>;
   size_guide?: any;
+  additional_specs?: Array<{ key: string; value: string }>;
   
   // Status
   status: string;
