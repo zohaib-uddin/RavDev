@@ -111,42 +111,28 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   orderItems: many(orderItems),
 }));
 
-// ==================== COLLECTIONS ====================
+// ==================== COLLECTIONS (Unified) ====================
 export const collections = pgTable('collections', {
   id: uuid('id').primaryKey().defaultRandom(),
-  name: varchar('name', { length: 100 }).notNull(),
-  slug: varchar('slug', { length: 120 }).notNull().unique(),
-  type: varchar('type', { length: 20 }).notNull().default('manual'),
+  name: varchar('name', { length: 255 }).notNull(),
+  slug: varchar('slug', { length: 255 }).notNull().unique(),
+  type: varchar('type', { length: 50 }).notNull(), // 'category', 'warm_chapter', 'collection_focus'
   description: text('description'),
-  cover_image_url: varchar('cover_image_url', { length: 500 }),
+  image_url: varchar('image_url', { length: 500 }),
+  product_ids: jsonb('product_ids').default([]),
+  display_order: integer('display_order').notNull().default(0),
   is_active: boolean('is_active').notNull().default(true),
-  sort_order: integer('sort_order').notNull().default(0),
-  
-  // Display flags
-  show_in_focus: boolean('show_in_focus').default(false),
-  show_explore_banner: boolean('show_explore_banner').default(false),
-  explore_title: varchar('explore_title', { length: 200 }),
-  show_on_home_chapter: boolean('show_on_home_chapter').default(false),
-  chapter_title: varchar('chapter_title', { length: 150 }).default('WARM CHAPTER I'),
-  edition_name: varchar('edition_name', { length: 100 }).default('MAIN EDITION'),
-  
-  // Automation rules
-  rules: jsonb('rules'),
-  rules_match: varchar('rules_match', { length: 10 }).default('all'),
-  
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table) => ({
   slugIdx: uniqueIndex('collections_slug_idx').on(table.slug),
+  typeIdx: index('collections_type_idx').on(table.type),
   activeIdx: index('collections_active_idx').on(table.is_active),
-  showInFocusIdx: index('collections_show_in_focus_idx').on(table.show_in_focus),
 }));
 
-export const collectionsRelations = relations(collections, ({ many }) => ({
-  products: many(collectionProducts),
-}));
+// Collections now use product_ids array instead of many-to-many relation
 
-// ==================== COLLECTION PRODUCTS (Many-to-Many) ====================
+// ==================== COLLECTION PRODUCTS (Legacy - kept for backward compatibility) ====================
 export const collectionProducts = pgTable('collection_products', {
   id: uuid('id').primaryKey().defaultRandom(),
   collection_id: uuid('collection_id').notNull(),
@@ -357,4 +343,35 @@ export const warmChapters = pgTable('warm_chapters', {
   slugIdx: uniqueIndex('warm_chapters_slug_idx').on(table.slug),
   activeIdx: index('warm_chapters_active_idx').on(table.is_active),
   orderIdx: index('warm_chapters_order_idx').on(table.display_order),
+}));
+
+// ==================== OTP VERIFICATIONS ====================
+export const otpVerifications = pgTable('otp_verifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull(),
+  otp: varchar('otp', { length: 6 }).notNull(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  is_verified: boolean('is_verified').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  emailIdx: index('otp_verifications_email_idx').on(table.email),
+}));
+
+// ==================== COUPON CODES ====================
+export const couponCodes = pgTable('coupon_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  discount_type: varchar('discount_type', { length: 20 }).notNull(), // 'percentage' or 'fixed'
+  discount_value: numeric('discount_value', { precision: 10, scale: 2 }).notNull(),
+  min_order_amount: numeric('min_order_amount', { precision: 10, scale: 2 }),
+  max_discount: numeric('max_discount', { precision: 10, scale: 2 }),
+  usage_limit: integer('usage_limit'),
+  used_count: integer('used_count').notNull().default(0),
+  starts_at: timestamp('starts_at', { withTimezone: true }),
+  ends_at: timestamp('ends_at', { withTimezone: true }),
+  is_active: boolean('is_active').notNull().default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  codeIdx: index('coupon_codes_code_idx').on(table.code),
+  activeIdx: index('coupon_codes_active_idx').on(table.is_active),
 }));

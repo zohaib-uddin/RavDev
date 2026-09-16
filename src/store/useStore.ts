@@ -47,9 +47,19 @@ export interface Product {
   image_url: string | null;
   
   // Variants
-  attributes: { sizes: string[]; colors: string[] };
-  variants_matrix?: any[];
+  attributes: { 
+    sizes: string[]; 
+    colors: Array<string | { name: string; hex: string }>; 
+  };
+  variants_matrix?: Array<{
+    size: string;
+    color: string;
+    price: number | null;
+    stock: number;
+    sku: string;
+  }>;
   size_guide?: any;
+  additional_specs?: Array<{ key: string; value: string }>;
   
   // Status
   status: string;
@@ -90,14 +100,20 @@ export interface User {
 export interface Order {
   id: string;
   order_number: string;
+  tracking_id?: string;
   user_id: string;
   items: CartItem[];
   total: number;
   subtotal: number;
   shipping_cost: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
   status: string;
   date: string;
-  address: any;
+  email?: string;
+  shipping_address?: any;
+  address?: any;
+  payment_method?: string;
 }
 
 export interface Review {

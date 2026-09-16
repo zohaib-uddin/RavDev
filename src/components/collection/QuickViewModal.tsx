@@ -147,19 +147,22 @@ export default function QuickViewModal({ product, isOpen, onClose }: QuickViewMo
               <div>
                 <label className="block text-sm font-medium mb-2">Color</label>
                 <div className="flex flex-wrap gap-2">
-                  {colors.map(color => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`px-4 py-2 border rounded-lg text-sm transition-all ${
-                        selectedColor === color
+                  {colors.map((color, idx) => {
+                    const colorName = typeof color === 'string' ? color : color.name;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedColor(colorName)}
+                        className={`px-4 py-2 border rounded-lg text-sm transition-all ${
+                        selectedColor === colorName
                           ? 'bg-black text-white border-black'
                           : 'border-gray-200 hover:border-black'
                       }`}
                     >
-                      {color}
+                      {colorName}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

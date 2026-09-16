@@ -104,11 +104,15 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       // Remove after animation and add to cart
       setTimeout(() => {
         flyingElement.remove();
-        addToCart(product, selectedSize, product.colors?.[0] || 'Black');
+        const firstColor = product.colors?.[0];
+        const colorName = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
+        addToCart(product, selectedSize, colorName);
       }, 800);
     } else {
       // Fallback if cart icon not found
-      addToCart(product, selectedSize, product.colors?.[0] || 'Black');
+      const firstColor = product.colors?.[0];
+      const colorName = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
+      addToCart(product, selectedSize, colorName);
     }
   };
 
@@ -131,7 +135,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
       onMouseLeave={handleMouseLeave}
     >
       {/* Product Image Container - 16:9 ratio */}
-      <Link to={`/product/${product.id}`} className="block">
+      <Link to={`/products/${product.slug}`} className="block">
         <div className="relative overflow-hidden rounded-xl aspect-[16/9] bg-gray-100 border-2 border-gray-200 group-hover:border-black transition-all duration-300">
           {/* Product Image */}
           <motion.img
@@ -293,7 +297,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
       {/* Product Info */}
       <div className="mt-3 px-1">
-        <Link to={`/product/${product.id}`}>
+        <Link to={`/products/${product.slug}`}>
           <h3 className="text-sm font-normal text-gray-800 line-clamp-2 hover:text-black transition-colors">
             {product.name}
           </h3>
@@ -333,7 +337,9 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 function QuickViewModal({ product, onClose }: { product: any; onClose: () => void }) {
   const { addToCart } = useStore();
   const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || '');
-  const [selectedColor, setSelectedColor] = useState(product.colors?.[0] || 'Black');
+  const firstColor = product.colors?.[0];
+  const initialColor = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
+  const [selectedColor, setSelectedColor] = useState(initialColor);
 
   const handleAddToCart = () => {
     if (!selectedSize) {
@@ -421,19 +427,22 @@ function QuickViewModal({ product, onClose }: { product: any; onClose: () => voi
               <div className="mb-6">
                 <p className="text-sm font-medium mb-2">Color</p>
                 <div className="flex gap-2 flex-wrap">
-                  {product.colors.map((color: string) => (
-                    <button
-                      key={color}
-                      onClick={() => setSelectedColor(color)}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-                        selectedColor === color
+                  {product.colors.map((color: any, idx: number) => {
+                    const colorName = typeof color === 'string' ? color : color.name;
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedColor(colorName)}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
+                        selectedColor === colorName
                           ? 'border-black bg-black text-white'
                           : 'border-gray-300 hover:border-black'
                       }`}
                     >
-                      {color}
+                      {colorName}
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -448,7 +457,7 @@ function QuickViewModal({ product, onClose }: { product: any; onClose: () => voi
                 Add to Cart
               </button>
               <Link
-                to={`/product/${product.id}`}
+                to={`/products/${product.slug}`}
                 onClick={onClose}
                 className="flex-1 border-2 border-black text-black py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors text-center"
               >

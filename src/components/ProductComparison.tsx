@@ -126,11 +126,14 @@ export default function ProductComparison() {
                     <div>
                       <span className="text-gray-500">Colors:</span>
                       <div className="flex flex-wrap gap-1 mt-1">
-                        {product.colors?.map((color) => (
-                          <span key={color} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                            {color}
-                          </span>
-                        ))}
+                        {product.colors?.map((color: any, idx: number) => {
+                          const colorName = typeof color === 'string' ? color : color.name;
+                          return (
+                            <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                              {colorName}
+                            </span>
+                          );
+                        })}
                       </div>
                     </div>
 

@@ -37,7 +37,7 @@ export default function CategoryCards() {
             viewport={{ once: true }}
             transition={{ delay: i * 0.08 }}
           >
-            <Link to={`/shop/${cat.slug}`} className="group block">
+            <Link to={`/collections/${cat.slug}`} className="group block">
               <div className="aspect-[3/4] rounded-2xl overflow-hidden mb-3 relative">
                 <img
                   src={cat.cover_image_url || categoryImages[cat.slug] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=600&h=700&fit=crop'}

@@ -144,7 +144,7 @@ export default function Navbar() {
                   onMouseLeave={() => setHoveredCategory(null)}
                 >
                   <Link
-                    to={`/shop/${category.slug}`}
+                    to={`/collections/${category.slug}`}
                     className="text-sm font-medium text-gray-700 hover:text-black transition-colors flex items-center gap-1"
                   >
                     {category.name}
@@ -192,7 +192,7 @@ export default function Navbar() {
                   {mainCategories.map(category => (
                     <Link
                       key={category.slug}
-                      to={`/shop/${category.slug}`}
+                      to={`/collections/${category.slug}`}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block text-lg font-medium py-3 border-b border-gray-100"
                     >

@@ -103,7 +103,7 @@ export default function CollectionPage() {
           <div className="max-w-7xl mx-auto px-4 py-4">
             <div className="flex gap-3 overflow-x-auto">
               <Link
-                to={`/shop/${categorySlug}`}
+                to={`/collections/${categorySlug}`}
                 className="px-5 py-2.5 bg-black text-white rounded-full text-sm font-medium whitespace-nowrap hover:bg-gray-800 transition-colors"
               >
                 All {category.name}
@@ -113,7 +113,7 @@ export default function CollectionPage() {
                 return (
                   <Link
                     key={sub.slug}
-                    to={`/shop/${sub.slug}`}
+                    to={`/collections/${sub.slug}`}
                     className="px-5 py-2.5 border rounded-full text-sm font-medium whitespace-nowrap hover:bg-black hover:text-white transition-colors flex items-center gap-2"
                   >
                     {sub.name}

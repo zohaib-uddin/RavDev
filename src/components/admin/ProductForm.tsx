@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { X, Plus, Trash2, Save, ChevronLeft, ChevronRight, Package, Tag, Image, Palette, Ruler, FileText } from 'lucide-react';
 import { useStore, Product } from '../../store/useStore';
@@ -54,7 +54,10 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
 
   const [newSize, setNewSize] = useState('');
   const [newColor, setNewColor] = useState('');
+  const [newColorHex, setNewColorHex] = useState('#000000');
   const [imageUrl, setImageUrl] = useState('');
+  const [variants, setVariants] = useState<any[]>([]);
+  const [additionalSpecs, setAdditionalSpecs] = useState<{key: string; value: string}[]>([]);
 
   const update = (field: string, value: any) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -75,14 +78,31 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
   };
 
   const addColor = () => {
-    if (newColor && !formData.attributes.colors.includes(newColor)) {
-      update('attributes', { ...formData.attributes, colors: [...formData.attributes.colors, newColor] });
-      setNewColor('');
+    if (newColor) {
+      const colorObj = { name: newColor, hex: newColorHex };
+      const existingColors = formData.attributes.colors || [];
+      const colorExists = existingColors.some((c: any) => 
+        typeof c === 'string' ? c === newColor : c.name === newColor
+      );
+      
+      if (!colorExists) {
+        update('attributes', { 
+          ...formData.attributes, 
+          colors: [...existingColors, colorObj] 
+        });
+        setNewColor('');
+        setNewColorHex('#000000');
+      }
     }
   };
 
-  const removeColor = (color: string) => {
-    update('attributes', { ...formData.attributes, colors: formData.attributes.colors.filter(c => c !== color) });
+  const removeColor = (color: any) => {
+    const colorName = typeof color === 'string' ? color : color.name;
+    const updatedColors = formData.attributes.colors.filter((c: any) => {
+      const cName = typeof c === 'string' ? c : c.name;
+      return cName !== colorName;
+    });
+    update('attributes', { ...formData.attributes, colors: updatedColors });
   };
 
   const addImage = () => {
@@ -96,7 +116,78 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
     update('images', formData.images.filter((_, i) => i !== index));
   };
 
+  // Auto-generate variants matrix when sizes or colors change
+  useEffect(() => {
+    const sizes = formData.attributes.sizes || [];
+    const colors = formData.attributes.colors || [];
+    
+    if (sizes.length > 0 && colors.length > 0) {
+      const newVariants: any[] = [];
+      sizes.forEach((size: string) => {
+        colors.forEach((color: any) => {
+          const colorName = typeof color === 'string' ? color : color.name;
+          const existingVariant = variants.find(v => v.size === size && v.color === colorName);
+          
+          newVariants.push({
+            size,
+            color: colorName,
+            price: existingVariant?.price || (size === sizes[0] ? formData.base_price : null),
+            stock: existingVariant?.stock || 0,
+            sku: `${formData.sku || 'RVZ'}-${size}-${colorName.replace(/\s+/g, '-').toUpperCase()}`
+          });
+        });
+      });
+      setVariants(newVariants);
+    } else {
+      setVariants([]);
+    }
+  }, [formData.attributes.sizes, formData.attributes.colors, formData.base_price, formData.sku]);
+
+  // Calculate total stock
+  const totalStock = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+
+  // Update variant
+  const updateVariant = (index: number, field: string, value: any) => {
+    const newVariants = [...variants];
+    newVariants[index] = { ...newVariants[index], [field]: value };
+    setVariants(newVariants);
+  };
+
+  // Add additional specification
+  const addSpec = () => {
+    setAdditionalSpecs([...additionalSpecs, { key: '', value: '' }]);
+  };
+
+  // Update additional specification
+  const updateSpec = (index: number, field: 'key' | 'value', value: string) => {
+    const newSpecs = [...additionalSpecs];
+    newSpecs[index] = { ...newSpecs[index], [field]: value };
+    setAdditionalSpecs(newSpecs);
+  };
+
+  // Remove additional specification
+  const removeSpec = (index: number) => {
+    setAdditionalSpecs(additionalSpecs.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = () => {
+    // Calculate total stock from variants
+    const totalStockCount = variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+    
+    // Convert colors to simple array for frontend compatibility
+    const colorNames = (formData.attributes.colors || []).map((c: any) => 
+      typeof c === 'string' ? c : c.name
+    );
+
+    // Build details array with additional specs
+    const details = [
+      formData.fabric_composition,
+      formData.fit && `Fit: ${formData.fit}`,
+      formData.garment_care && `Care: ${formData.garment_care}`,
+      ...additionalSpecs.filter(s => s.key && s.value).map(s => `${s.key}: ${s.value}`),
+      'Made in Pakistan'
+    ].filter(Boolean) as string[];
+
     const productData: Product = {
       id: product?.id || Date.now().toString(),
       name: formData.name,
@@ -117,7 +208,11 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
       badge: formData.badge,
       images: formData.images,
       image_url: formData.images[0] || '',
-      attributes: formData.attributes,
+      attributes: {
+        sizes: formData.attributes.sizes,
+        colors: formData.attributes.colors, // Keep full color objects with hex
+      },
+      variants_matrix: variants, // Store variants matrix
       fabric_composition: formData.fabric_composition,
       fabric_finish: formData.fabric_finish,
       graphic_print: formData.graphic_print,
@@ -137,13 +232,13 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
       salePrice: formData.compare_at_price || undefined,
       image: formData.images[0] || '',
       sizes: formData.attributes.sizes,
-      colors: formData.attributes.colors,
-      stockCount: 50,
-      inStock: true,
+      colors: colorNames, // Simple color names for frontend
+      stockCount: totalStockCount || 50,
+      inStock: totalStockCount > 0,
       isNew: formData.is_new_arrival,
       isFeatured: formData.is_featured,
       isBestseller: formData.is_best_seller,
-      details: [formData.fabric_composition, formData.fit && `Fit: ${formData.fit}`, formData.garment_care && `Care: ${formData.garment_care}`, 'Made in Pakistan'].filter(Boolean) as string[],
+      details,
       material: formData.fabric_composition || formData.fabric,
       category: formData.category_slug,
     };
@@ -337,6 +432,8 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
           {currentStep === 4 && (
             <div className="space-y-5">
               <h3 className="text-lg font-bold flex items-center gap-2"><Palette size={20} /> Sizes & Colors</h3>
+              
+              {/* Sizes Section */}
               <div>
                 <label className="block text-sm font-medium mb-2">Sizes</label>
                 <div className="flex flex-wrap gap-2 mb-3">
@@ -352,21 +449,100 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
                   <button onClick={addSize} className="px-4 py-2 bg-black text-white rounded-lg text-sm">Add</button>
                 </div>
               </div>
+
+              {/* Colors Section with Color Picker */}
               <div>
                 <label className="block text-sm font-medium mb-2">Colors</label>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {formData.attributes.colors.map(color => (
-                    <span key={color} className="flex items-center gap-1 bg-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-medium">
-                      {color}
-                      <button onClick={() => removeColor(color)}><X size={12} /></button>
-                    </span>
-                  ))}
+                  {(formData.attributes.colors || []).map((color: any, idx: number) => {
+                    const colorName = typeof color === 'string' ? color : color.name;
+                    const colorHex = typeof color === 'string' ? '#000000' : color.hex;
+                    return (
+                      <span 
+                        key={idx} 
+                        className="flex items-center gap-2 bg-purple-600 text-white px-3 py-1.5 rounded-full text-xs font-medium"
+                      >
+                        <span 
+                          className="w-4 h-4 rounded-full border border-white" 
+                          style={{ backgroundColor: colorHex }}
+                        />
+                        {colorName}
+                        <button onClick={() => removeColor(color)}><X size={12} /></button>
+                      </span>
+                    );
+                  })}
                 </div>
                 <div className="flex gap-2">
-                  <input type="text" value={newColor} onChange={e => setNewColor(e.target.value)} placeholder="Add color (e.g., Smoky Black)" className="flex-1 px-4 py-2 border rounded-lg text-sm" onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addColor())} />
+                  <input 
+                    type="color" 
+                    value={newColorHex} 
+                    onChange={e => setNewColorHex(e.target.value)} 
+                    className="w-12 h-10 border rounded-lg cursor-pointer"
+                    title="Pick color"
+                  />
+                  <input 
+                    type="text" 
+                    value={newColor} 
+                    onChange={e => setNewColor(e.target.value)} 
+                    placeholder="Color name (e.g., Smoky Black)" 
+                    className="flex-1 px-4 py-2 border rounded-lg text-sm" 
+                    onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addColor())} 
+                  />
                   <button onClick={addColor} className="px-4 py-2 bg-black text-white rounded-lg text-sm">Add</button>
                 </div>
               </div>
+
+              {/* Variants Matrix */}
+              {variants.length > 0 && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="text-sm font-bold">Variants Matrix (Auto-Generated)</h4>
+                    <span className="text-xs text-gray-500">Total Stock: {totalStock}</span>
+                  </div>
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="text-left p-3 font-medium">Size</th>
+                          <th className="text-left p-3 font-medium">Color</th>
+                          <th className="text-left p-3 font-medium">Price (Rs.)</th>
+                          <th className="text-left p-3 font-medium">Stock</th>
+                          <th className="text-left p-3 font-medium">SKU</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {variants.map((variant, index) => (
+                          <tr key={index} className="border-t">
+                            <td className="p-3">{variant.size}</td>
+                            <td className="p-3">{variant.color}</td>
+                            <td className="p-3">
+                              <input
+                                type="number"
+                                value={variant.price || ''}
+                                onChange={(e) => updateVariant(index, 'price', parseFloat(e.target.value) || null)}
+                                placeholder={variant.size === variants[0]?.size ? 'Base price' : 'Optional'}
+                                className="w-24 px-2 py-1 border rounded text-sm"
+                              />
+                            </td>
+                            <td className="p-3">
+                              <input
+                                type="number"
+                                value={variant.stock}
+                                onChange={(e) => updateVariant(index, 'stock', parseInt(e.target.value) || 0)}
+                                className="w-20 px-2 py-1 border rounded text-sm"
+                              />
+                            </td>
+                            <td className="p-3 text-xs text-gray-500 font-mono">{variant.sku}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    💡 First size price is pre-filled. Other variants can have different prices or leave empty to use base price.
+                  </p>
+                </div>
+              )}
             </div>
           )}
 
@@ -414,6 +590,60 @@ export default function ProductForm({ product, onClose }: ProductFormProps) {
               <div>
                 <label className="block text-sm font-medium mb-1.5">Model Size</label>
                 <input type="text" value={formData.model_size} onChange={e => update('model_size', e.target.value)} placeholder="e.g., Model wears size L" className="w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:border-black" />
+              </div>
+
+              {/* More Specifications Section */}
+              <div className="mt-6 pt-6 border-t">
+                <div className="flex items-center justify-between mb-3">
+                  <h4 className="text-sm font-bold flex items-center gap-2">
+                    <Plus size={16} />
+                    More Specifications
+                  </h4>
+                  <button 
+                    onClick={addSpec} 
+                    className="px-3 py-1.5 bg-black text-white rounded-lg text-xs font-medium hover:bg-gray-800 transition-colors flex items-center gap-1"
+                  >
+                    <Plus size={12} /> Add Spec
+                  </button>
+                </div>
+                
+                {additionalSpecs.length > 0 ? (
+                  <div className="space-y-2">
+                    {additionalSpecs.map((spec, index) => (
+                      <div key={index} className="flex gap-2 items-center">
+                        <input
+                          type="text"
+                          value={spec.key}
+                          onChange={(e) => updateSpec(index, 'key', e.target.value)}
+                          placeholder="Specification name (e.g., Weight)"
+                          className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                        />
+                        <input
+                          type="text"
+                          value={spec.value}
+                          onChange={(e) => updateSpec(index, 'value', e.target.value)}
+                          placeholder="Value (e.g., 250g)"
+                          className="flex-1 px-3 py-2 border rounded-lg text-sm"
+                        />
+                        <button
+                          onClick={() => removeSpec(index)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-6 border-2 border-dashed rounded-lg text-gray-400">
+                    <p className="text-sm">No additional specifications yet</p>
+                    <p className="text-xs mt-1">Click "Add Spec" to add custom specifications</p>
+                  </div>
+                )}
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  💡 Add custom specifications like Weight, Origin, Closure Type, etc.
+                </p>
               </div>
             </div>
           )}

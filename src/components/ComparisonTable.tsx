@@ -119,11 +119,14 @@ export default function ComparisonTable({ products, onClose }: ComparisonTablePr
               {/* Colors */}
               {renderComparisonRow('Available Colors', (product) => (
                 <div className="flex flex-wrap gap-1 justify-center">
-                  {(product.colors || product.attributes?.colors || []).map(color => (
-                    <span key={color} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                      {color}
-                    </span>
-                  ))}
+                  {(product.colors || product.attributes?.colors || []).map((color, idx) => {
+                    const colorName = typeof color === 'string' ? color : color.name;
+                    return (
+                      <span key={idx} className="text-xs bg-gray-100 px-2 py-1 rounded">
+                        {colorName}
+                      </span>
+                    );
+                  })}
                 </div>
               ))}
 

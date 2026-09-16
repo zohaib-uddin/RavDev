@@ -368,6 +368,48 @@ app.get('/api/warm-chapters', async (req, res) => {
   }
 });
 
+// ==================== COLLECTIONS ROUTES ====================
+
+app.get('/api/collections', async (req, res) => {
+  try {
+    console.log('📚 Fetching collections from database...');
+    
+    const collections = await sql`
+      SELECT * FROM collections 
+      WHERE is_active = true 
+      ORDER BY display_order ASC
+    `;
+    
+    console.log(`✅ Found ${collections.length} collections`);
+    res.json(collections);
+  } catch (error: any) {
+    console.error('❌ Get collections error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+app.get('/api/collections/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    console.log(`📚 Fetching collection by slug: ${slug}`);
+    
+    const collections = await sql`
+      SELECT * FROM collections 
+      WHERE slug = ${slug} AND is_active = true
+    `;
+    
+    if (collections.length === 0) {
+      return res.status(404).json({ message: 'Collection not found' });
+    }
+    
+    console.log(`✅ Found collection: ${collections[0].name}`);
+    res.json(collections[0]);
+  } catch (error: any) {
+    console.error('❌ Get collection error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // ==================== ORDERS ROUTES ====================
 
 app.get('/api/orders', authenticateToken, async (req, res) => {
@@ -538,6 +580,144 @@ app.get('/api/faqs', async (req, res) => {
     res.json(faqs);
   } catch (error: any) {
     console.error('Get FAQs error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== OTP VERIFICATION ROUTES ====================
+
+// Send OTP
+app.post('/api/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Set expiration time (10 minutes from now)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+    
+    // Save OTP to database
+    await sql`
+      INSERT INTO otp_verifications (email, otp, expires_at)
+      VALUES (${email}, ${otp}, ${expiresAt})
+    `;
+    
+    // In production, send email with OTP
+    // For now, we'll just log it and return it in response (for testing)
+    console.log(`📧 OTP for ${email}: ${otp}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'OTP sent successfully',
+      // In production, don't return OTP in response
+      otp: process.env.NODE_ENV === 'development' ? otp : undefined
+    });
+  } catch (error: any) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Verify OTP
+app.post('/api/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    // Find OTP record
+    const records = await sql`
+      SELECT * FROM otp_verifications
+      WHERE email = ${email} 
+        AND otp = ${otp} 
+        AND is_verified = false
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    
+    if (records.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+    
+    // Mark OTP as verified
+    await sql`
+      UPDATE otp_verifications
+      SET is_verified = true
+      WHERE id = ${records[0].id}
+    `;
+    
+    res.json({ success: true, message: 'OTP verified successfully' });
+  } catch (error: any) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== COUPON CODE ROUTES ====================
+
+// Validate coupon
+app.post('/api/validate-coupon', async (req, res) => {
+  try {
+    const { code, orderAmount } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({ message: 'Coupon code is required' });
+    }
+
+    // Find coupon
+    const coupons = await sql`
+      SELECT * FROM coupon_codes
+      WHERE code = ${code}
+        AND is_active = true
+        AND (starts_at IS NULL OR starts_at <= NOW())
+        AND (ends_at IS NULL OR ends_at >= NOW())
+        AND (usage_limit IS NULL OR used_count < usage_limit)
+    `;
+    
+    if (coupons.length === 0) {
+      return res.json({ valid: false, message: 'Invalid or expired coupon code' });
+    }
+    
+    const coupon = coupons[0];
+    
+    // Check minimum order amount
+    if (coupon.min_order_amount && orderAmount < parseFloat(coupon.min_order_amount)) {
+      return res.json({ 
+        valid: false, 
+        message: `Minimum order amount of Rs. ${coupon.min_order_amount} required` 
+      });
+    }
+    
+    // Calculate discount
+    let discount = 0;
+    if (coupon.discount_type === 'percentage') {
+      discount = (orderAmount * parseFloat(coupon.discount_value)) / 100;
+      if (coupon.max_discount && discount > parseFloat(coupon.max_discount)) {
+        discount = parseFloat(coupon.max_discount);
+      }
+    } else if (coupon.discount_type === 'fixed') {
+      discount = parseFloat(coupon.discount_value);
+    }
+    
+    res.json({ 
+      valid: true, 
+      discount: Math.round(discount),
+      coupon: {
+        code: coupon.code,
+        type: coupon.discount_type,
+        value: coupon.discount_value
+      }
+    });
+  } catch (error: any) {
+    console.error('Validate coupon error:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

@@ -41,7 +41,7 @@ export default function Footer() {
               <li><Link to="/shop" className="text-gray-400 hover:text-white text-sm">Shop All</Link></li>
               {categories.slice(0, 5).map(cat => (
                 <li key={cat.slug}>
-                  <Link to={`/shop/${cat.slug}`} className="text-gray-400 hover:text-white text-sm">{cat.name}</Link>
+                  <Link to={`/collections/${cat.slug}`} className="text-gray-400 hover:text-white text-sm">{cat.name}</Link>
                 </li>
               ))}
             </ul>

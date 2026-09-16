@@ -6,7 +6,7 @@ import { useStore } from '../store/useStore';
 import SizeGuideModal from '../components/SizeGuideModal';
 
 export default function ProductDetail() {
-  const { id } = useParams();
+  const { productSlug, id } = useParams(); // Support both slug and legacy id
   const navigate = useNavigate();
   const { products, addToCart, wishlist, toggleWishlist, reviews, fetchProducts } = useStore();
   const [selectedSize, setSelectedSize] = useState('');
@@ -21,9 +21,12 @@ export default function ProductDetail() {
     fetchProducts();
   }, []);
 
-  const product = products.find(p => p.id === id);
-  const productReviews = reviews.filter(r => r.product_id === id);
-  const relatedProducts = products.filter(p => p.category === product?.category && p.id !== id).slice(0, 4);
+  // Find product by slug (new) or by id (legacy)
+  const product = products.find(p => 
+    productSlug ? p.slug === productSlug : p.id === id
+  );
+  const productReviews = reviews.filter(r => r.product_id === product?.id);
+  const relatedProducts = products.filter(p => p.category === product?.category && p.id !== product?.id).slice(0, 4);
 
   // Auto-select first size and color when product loads
   useEffect(() => {
@@ -31,7 +34,9 @@ export default function ProductDetail() {
       setSelectedSize(product.sizes[0]);
     }
     if (product && !selectedColor && product.colors && product.colors.length > 0) {
-      setSelectedColor(product.colors[0]);
+      const firstColor = product.colors[0] as any;
+      const colorName = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
+      setSelectedColor(colorName);
     }
   }, [product]);
 
@@ -48,8 +53,10 @@ export default function ProductDetail() {
   
   const handleAddToCart = () => {
     if (!selectedSize) return;
+    const firstColor = product.colors?.[0] as any;
+    const defaultColor = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
     for (let i = 0; i < quantity; i++) {
-      addToCart(product, selectedSize, selectedColor || product.colors?.[0] || 'Black');
+      addToCart(product, selectedSize, selectedColor || defaultColor);
     }
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 3000);
@@ -57,9 +64,11 @@ export default function ProductDetail() {
 
   const handleBuyNow = () => {
     if (!selectedSize) return;
+    const firstColor = product.colors?.[0] as any;
+    const defaultColor = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
     // Add to cart first
     for (let i = 0; i < quantity; i++) {
-      addToCart(product, selectedSize, selectedColor || product.colors?.[0] || 'Black');
+      addToCart(product, selectedSize, selectedColor || defaultColor);
     }
     // Navigate to checkout
     navigate('/checkout');
@@ -78,7 +87,7 @@ export default function ProductDetail() {
           <ChevronRight size={14} />
           <Link to="/shop" className="hover:text-black">Shop</Link>
           <ChevronRight size={14} />
-          <Link to={`/shop/${product.category}`} className="hover:text-black capitalize">
+          <Link to={`/collections/${product.category}`} className="hover:text-black capitalize">
             {product.category?.replace('-', ' ')}
           </Link>
           <ChevronRight size={14} />
@@ -181,11 +190,18 @@ export default function ProductDetail() {
 
               {/* Color Selection - Circular Swatches */}
               <div className="mt-6">
-                <h4 className="font-bold text-sm mb-3">COLOR: <span className="font-normal text-gray-600">{selectedColor || product.colors?.[0]}</span></h4>
+                <h4 className="font-bold text-sm mb-3">
+                  COLOR: <span className="font-normal text-gray-600">
+                    {selectedColor || (typeof product.colors?.[0] === 'string' ? product.colors[0] : (product.colors?.[0] as any)?.name)}
+                  </span>
+                </h4>
                 <div className="flex gap-3 flex-wrap">
-                  {product.colors?.map((color) => {
-                    const isSelected = (selectedColor || product.colors?.[0]) === color;
-                    // Map color names to hex codes (you can expand this mapping)
+                  {product.colors?.map((color: any, idx: number) => {
+                    const colorName = typeof color === 'string' ? color : color.name;
+                    const colorHex = typeof color === 'string' ? undefined : color.hex;
+                    const isSelected = selectedColor === colorName;
+                    
+                    // Map color names to hex codes (fallback if no hex provided)
                     const colorMap: Record<string, string> = {
                       'Black': '#000000',
                       'White': '#FFFFFF',
@@ -203,17 +219,17 @@ export default function ProductDetail() {
                       'Beige': '#D4C5B9',
                       'Charcoal': '#374151',
                     };
-                    const hexColor = colorMap[color] || '#CCCCCC';
+                    const hexColor = colorHex || colorMap[colorName] || '#CCCCCC';
                     
                     return (
                       <button
-                        key={color}
-                        onClick={() => setSelectedColor(color)}
+                        key={idx}
+                        onClick={() => setSelectedColor(colorName)}
                         className={`relative w-12 h-12 rounded-full border-2 transition-all hover:scale-110 ${
                           isSelected ? 'border-black scale-110' : 'border-gray-300'
                         }`}
                         style={{ backgroundColor: hexColor }}
-                        title={color}
+                        title={colorName}
                       >
                         {isSelected && (
                           <div className="absolute inset-0 flex items-center justify-center">
