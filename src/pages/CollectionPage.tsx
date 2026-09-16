@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import FilterSidebar from '../components/collection/FilterSidebar';
 import QuickViewModal from '../components/collection/QuickViewModal';
 import CollectionHero from '../components/CollectionHero';
+import ProductCard from '../components/ProductCard';
 
 export default function CollectionPage() {
   const { categorySlug } = useParams();
@@ -149,63 +150,9 @@ export default function CollectionPage() {
             </div>
 
             {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProducts.map((product, i) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="group"
-                  >
-                    <div className="relative overflow-hidden rounded-xl aspect-[3/4] bg-gray-100 mb-3">
-                      <Link to={`/product/${product.id}`}>
-                        <img
-                          src={product.image}
-                          alt={product.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        />
-                      </Link>
-                      {product.isNew && (
-                        <span className="absolute top-3 left-3 bg-black text-white text-[10px] font-bold px-2 py-1 rounded-full">
-                          NEW
-                        </span>
-                      )}
-                      {product.salePrice && (
-                        <span className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-full">
-                          SALE
-                        </span>
-                      )}
-                      {/* Quick View Button */}
-                      <button
-                        onClick={() => setQuickViewProduct(product)}
-                        className="absolute bottom-3 left-3 right-3 bg-white text-black py-2 rounded-full text-sm font-bold opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        Quick View
-                      </button>
-                    </div>
-                    <Link to={`/product/${product.id}`}>
-                      <h3 className="text-sm font-medium line-clamp-1 hover:text-purple-600 transition-colors">
-                        {product.name}
-                      </h3>
-                    </Link>
-                    <div className="flex items-center gap-2 mt-1">
-                      {product.salePrice ? (
-                        <>
-                          <span className="text-sm font-bold">
-                            Rs. {product.salePrice.toLocaleString()}
-                          </span>
-                          <span className="text-xs text-gray-400 line-through">
-                            Rs. {product.price?.toLocaleString()}
-                          </span>
-                        </>
-                      ) : (
-                        <span className="text-sm font-bold">
-                          Rs. {product.price?.toLocaleString()}
-                        </span>
-                      )}
-                    </div>
-                  </motion.div>
+                  <ProductCard key={product.id} product={product} index={i} />
                 ))}
               </div>
             ) : (
