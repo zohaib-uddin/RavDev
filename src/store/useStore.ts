@@ -100,14 +100,20 @@ export interface User {
 export interface Order {
   id: string;
   order_number: string;
+  tracking_id?: string;
   user_id: string;
   items: CartItem[];
   total: number;
   subtotal: number;
   shipping_cost: number;
+  discount_amount?: number;
+  coupon_code?: string | null;
   status: string;
   date: string;
-  address: any;
+  email?: string;
+  shipping_address?: any;
+  address?: any;
+  payment_method?: string;
 }
 
 export interface Review {

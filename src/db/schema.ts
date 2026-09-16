@@ -358,3 +358,34 @@ export const warmChapters = pgTable('warm_chapters', {
   activeIdx: index('warm_chapters_active_idx').on(table.is_active),
   orderIdx: index('warm_chapters_order_idx').on(table.display_order),
 }));
+
+// ==================== OTP VERIFICATIONS ====================
+export const otpVerifications = pgTable('otp_verifications', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  email: varchar('email', { length: 255 }).notNull(),
+  otp: varchar('otp', { length: 6 }).notNull(),
+  expires_at: timestamp('expires_at', { withTimezone: true }).notNull(),
+  is_verified: boolean('is_verified').notNull().default(false),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  emailIdx: index('otp_verifications_email_idx').on(table.email),
+}));
+
+// ==================== COUPON CODES ====================
+export const couponCodes = pgTable('coupon_codes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  code: varchar('code', { length: 50 }).notNull().unique(),
+  discount_type: varchar('discount_type', { length: 20 }).notNull(), // 'percentage' or 'fixed'
+  discount_value: numeric('discount_value', { precision: 10, scale: 2 }).notNull(),
+  min_order_amount: numeric('min_order_amount', { precision: 10, scale: 2 }),
+  max_discount: numeric('max_discount', { precision: 10, scale: 2 }),
+  usage_limit: integer('usage_limit'),
+  used_count: integer('used_count').notNull().default(0),
+  starts_at: timestamp('starts_at', { withTimezone: true }),
+  ends_at: timestamp('ends_at', { withTimezone: true }),
+  is_active: boolean('is_active').notNull().default(true),
+  created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+}, (table) => ({
+  codeIdx: index('coupon_codes_code_idx').on(table.code),
+  activeIdx: index('coupon_codes_active_idx').on(table.is_active),
+}));
