@@ -6,7 +6,7 @@ import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
 import Home from './pages/Home';
 import CollectionsPage from './pages/CollectionsPage';
-import ProductDetail from './pages/ProductDetail';
+import ProductDetailPage from './pages/ProductDetailPage';
 import AdminPanel from './pages/AdminPanel';
 import ShopAllPage from './pages/ShopAllPage';
 
@@ -23,7 +23,7 @@ export default function App() {
               <Route path="/shop" element={<ShopAllPage />} />
               <Route path="/collections/:mainCategorySlug" element={<CollectionsPage />} />
               <Route path="/collections/:mainCategorySlug/:subCategorySlug" element={<CollectionsPage />} />
-              <Route path="/products/:productSlug" element={<ProductDetail />} />
+              <Route path="/products/:productSlug" element={<ProductDetailPage />} />
               <Route path="/admin" element={<AdminPanel />} />
             </Routes>
           </main>
