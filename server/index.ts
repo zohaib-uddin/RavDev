@@ -65,7 +65,7 @@ app.get('/api/admin/categories', async (req, res) => {
     }
     query += ' ORDER BY display_order ASC';
     
-    const categories = await sql(query);
+    const categories = await sql.query(query);
     res.json(categories);
   } catch (error: any) {
     console.error('Error fetching categories:', error);
@@ -238,19 +238,23 @@ app.put('/api/products/:id', upload.single('thumbnail'), async (req, res) => {
     
     let updateQuery = `
       UPDATE products 
-      SET name = ${name}, slug = ${slug}, description = ${description}, 
-          price = ${price}, main_category_id = ${main_category_id}, 
-          sub_category_id = ${sub_category_id}, is_featured = ${is_featured},
+      SET name = $1, slug = $2, description = $3, 
+          price = $4, main_category_id = $5, 
+          sub_category_id = $6, is_featured = $7,
           updated_at = NOW()
     `;
     
+    const params: any[] = [name, slug, description, price, main_category_id, sub_category_id, is_featured];
+    
     if (req.file) {
-      updateQuery += `, thumbnail_image = ${`/uploads/${req.file.filename}`}`;
+      updateQuery += `, thumbnail_image = $${params.length + 1}`;
+      params.push(`/uploads/${req.file.filename}`);
     }
     
-    updateQuery += ` WHERE id = ${id} RETURNING *`;
+    updateQuery += ` WHERE id = $${params.length + 1} RETURNING *`;
+    params.push(id);
     
-    const result = await sql(updateQuery);
+    const result = await sql.query(updateQuery, params);
     res.json(result[0]);
   } catch (error: any) {
     console.error('Error updating product:', error);
@@ -444,7 +448,7 @@ app.get('/api/products/shop-all', async (req, res) => {
         query += ` ORDER BY is_featured DESC, created_at DESC`;
     }
     
-    const products = params.length > 0 ? await sql(query, params) : await sql(query);
+    const products = params.length > 0 ? await sql.query(query, params) : await sql.query(query);
     
     res.json({ products, total: products.length });
   } catch (error: any) {
