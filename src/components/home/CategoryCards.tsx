@@ -1,9 +1,16 @@
+import { useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 
 export default function CategoryCards() {
-  const { categories } = useStore();
+  const { categories, fetchCategories } = useStore();
+
+  useEffect(() => {
+    if (categories.length === 0) {
+      fetchCategories();
+    }
+  }, []);
 
   const categoryImages: Record<string, string> = {
     'co-ord-sets': 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=600&h=700&fit=crop',

@@ -38,11 +38,20 @@ export default function Navbar() {
 
   const fetchMainCategories = async () => {
     try {
+      console.log('🔄 Fetching main categories for navbar...');
       const response = await fetch('http://localhost:3001/api/admin/categories?type=main');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`✅ Received ${data.length} main categories for navbar`);
       setMainCategories(data);
     } catch (error) {
-      console.error('Error fetching main categories:', error);
+      console.error('❌ Error fetching main categories:', error);
+      // Fallback to empty array on error
+      setMainCategories([]);
     }
   };
 
