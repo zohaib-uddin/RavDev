@@ -4,12 +4,15 @@ import { motion } from 'framer-motion';
 
 interface WarmChapter {
   id: string;
-  name: string;
+  title: string;
+  subtitle?: string;
   slug: string;
-  image: string;
-  type: string;
+  image_url: string;
+  product_ids?: string[];
   display_order: number;
   is_active: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export default function WarmChapterSection() {
@@ -120,8 +123,8 @@ export default function WarmChapterSection() {
                     {/* Image Container */}
                     <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
                       <img
-                        src={chapter.image}
-                        alt={chapter.name}
+                        src={chapter.image_url}
+                        alt={chapter.title}
                         className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 origin-left"
                         loading={index < 4 ? 'eager' : 'lazy'}
                       />
@@ -130,7 +133,7 @@ export default function WarmChapterSection() {
                     {/* Title */}
                     <div className="py-3 px-4 text-center">
                       <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
-                        {chapter.name}
+                        {chapter.title}
                       </h3>
                     </div>
                   </div>

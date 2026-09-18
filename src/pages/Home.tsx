@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import HeroBanner from '../components/home/HeroBanner';
 import WarmChapterSection from '../components/home/WarmChapterSection';
 import CollectionsInFocusSection from '../components/home/CollectionsInFocusSection';
 
@@ -14,6 +15,7 @@ interface MainCategory {
 
 export default function Home() {
   const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchMainCategories();
@@ -21,48 +23,28 @@ export default function Home() {
 
   const fetchMainCategories = async () => {
     try {
+      setLoading(true);
+      console.log('🔄 Fetching main categories...');
       const response = await fetch('http://localhost:3001/api/admin/categories?type=main');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`✅ Received ${data.length} main categories`);
       setMainCategories(data);
     } catch (error) {
-      console.error('Error fetching main categories:', error);
+      console.error('❌ Error fetching main categories:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-5xl md:text-6xl font-bold mb-4"
-          >
-            Welcome to Ravenza
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="text-xl mb-8"
-          >
-            Premium Streetwear for the Modern Generation
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Link
-              to="/collections/oversize-tees"
-              className="inline-block bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
-            >
-              Shop Now
-            </Link>
-          </motion.div>
-        </div>
-      </section>
+      {/* Hero Banner Section */}
+      <HeroBanner />
 
       {/* Warm Chapter I Section */}
       <WarmChapterSection />

@@ -570,6 +570,12 @@ async function seed() {
     // 8.4 Seed orders and order_items tables
     if (userId && productIds.length >= 2) {
       console.log('  → Seeding orders...');
+      
+      // Create order items JSON separately to avoid interpolation issues
+      const orderItems1 = JSON.stringify([
+        { product_id: productIds[0], quantity: 2, price: 2500 }
+      ]);
+      
       const orderResult = await sql`
         INSERT INTO orders (
           order_number, tracking_id, user_id, customer_email, customer_name, customer_phone,
@@ -581,7 +587,7 @@ async function seed() {
           'ORD-2024-001', 'TRK-ABC123', ${userId}, 'ahmed@test.com', 'Ahmed Khan', '03001234567',
           'Ahmed Khan', '03001234567', '123 Main Street', 'Lahore', '54000', 'Pakistan',
           'Ahmed Khan', '03001234567', '123 Main Street', 'Lahore', '54000', 'Pakistan',
-          '[{"product_id": "${productIds[0]}", "quantity": 2, "price": 2500}]'::jsonb,
+          ${orderItems1}::jsonb,
           5000, 'standard', 200, 0, 'cod', 'paid', 'delivered', 'Please deliver in evening'
         )
         RETURNING id
@@ -601,6 +607,10 @@ async function seed() {
       }
 
       // Create another order
+      const orderItems2 = JSON.stringify([
+        { product_id: productIds[1], quantity: 1, price: 3500 }
+      ]);
+      
       const orderResult2 = await sql`
         INSERT INTO orders (
           order_number, tracking_id, user_id, customer_email, customer_name, customer_phone,
@@ -612,7 +622,7 @@ async function seed() {
           'ORD-2024-002', 'TRK-DEF456', ${userId}, 'sara@test.com', 'Sara Ali', '03009876543',
           'Sara Ali', '03009876543', '456 Garden Town', 'Karachi', '75500', 'Pakistan',
           'Sara Ali', '03009876543', '456 Garden Town', 'Karachi', '75500', 'Pakistan',
-          '[{"product_id": "${productIds[1]}", "quantity": 1, "price": 3500}]'::jsonb,
+          ${orderItems2}::jsonb,
           3500, 'express', 500, 350, 'WELCOME10', 'online', 'unpaid', 'processing', 'Gift wrap please'
         )
         RETURNING id
