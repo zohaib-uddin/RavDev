@@ -360,6 +360,57 @@ app.get('/api/collections-in-focus', async (req, res) => {
   }
 });
 
+// ==================== WARM CHAPTERS API ====================
+
+// GET /api/warm-chapters - Get all active warm chapters for homepage carousel
+app.get('/api/warm-chapters', async (req, res) => {
+  try {
+    const warmChapters = await sql`
+      SELECT 
+        id,
+        title,
+        subtitle,
+        slug,
+        image_url,
+        product_ids,
+        display_order,
+        is_active,
+        created_at,
+        updated_at
+      FROM warm_chapters 
+      WHERE is_active = true 
+      ORDER BY display_order ASC
+    `;
+    
+    console.log(`✅ Fetched ${warmChapters.length} warm chapters`);
+    res.json(warmChapters);
+  } catch (error: any) {
+    console.error('Get warm chapters error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/warm-chapters/:slug - Get single warm chapter by slug
+app.get('/api/warm-chapters/:slug', async (req, res) => {
+  try {
+    const { slug } = req.params;
+    
+    const warmChapter = await sql`
+      SELECT * FROM warm_chapters 
+      WHERE slug = ${slug} AND is_active = true
+    `;
+    
+    if (warmChapter.length === 0) {
+      return res.status(404).json({ message: 'Warm chapter not found' });
+    }
+    
+    res.json(warmChapter[0]);
+  } catch (error: any) {
+    console.error('Get warm chapter error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // ==================== SHOP ALL PRODUCTS API ====================
 
 // GET /api/products/shop-all - Get all products with filters
