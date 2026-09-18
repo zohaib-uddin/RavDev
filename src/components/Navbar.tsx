@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Menu, X, ShoppingBag, User } from 'lucide-react';
+import { motion } from 'framer-motion';
 import MegaMenu from './MegaMenu';
+import { useCart } from '../context/CartContext';
 
 interface MainCategory {
   id: string;
@@ -14,6 +16,10 @@ export default function Navbar() {
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const triggerRef = useRef<HTMLDivElement>(null);
+  const cartIconRef = useRef<HTMLDivElement>(null);
+  const { items, openCart } = useCart();
+  
+  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   useEffect(() => {
     fetchMainCategories();
@@ -73,9 +79,36 @@ export default function Navbar() {
             <Link to="/admin" className="text-gray-700 hover:text-black">
               <User size={24} />
             </Link>
-            <Link to="/cart" className="text-gray-700 hover:text-black relative">
-              <ShoppingBag size={24} />
-            </Link>
+            <div ref={cartIconRef} data-cart-icon className="relative">
+              <button
+                onClick={openCart}
+                className="text-gray-700 hover:text-black relative"
+              >
+                <motion.div
+                  key={cartCount}
+                  initial={{ scale: 1 }}
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                  }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <ShoppingBag size={24} />
+                </motion.div>
+                {cartCount > 0 && (
+                  <motion.span
+                    key={cartCount}
+                    initial={{ scale: 0 }}
+                    animate={{ 
+                      scale: [0, 1.3, 1],
+                    }}
+                    transition={{ duration: 0.4, type: 'spring' }}
+                    className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center"
+                  >
+                    {cartCount}
+                  </motion.span>
+                )}
+              </button>
+            </div>
 
             {/* Mobile Menu Button */}
             <button
