@@ -27,11 +27,20 @@ export default function WarmChapterSection() {
 
   const fetchWarmChapters = async () => {
     try {
+      console.log('🔄 Fetching warm chapters...');
       const response = await fetch('http://localhost:3001/api/warm-chapters');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log(`✅ Received ${data.length} warm chapters`);
       setChapters(data);
     } catch (error) {
-      console.error('Error fetching warm chapters:', error);
+      console.error('❌ Error fetching warm chapters:', error);
+      // Fallback to empty array on error
+      setChapters([]);
     }
   };
 
