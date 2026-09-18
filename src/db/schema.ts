@@ -31,11 +31,13 @@ export const users = pgTable('users', {
   name: varchar('name', { length: 255 }).notNull(),
   phone: varchar('phone', { length: 20 }),
   password_hash: varchar('password_hash', { length: 255 }),
+  role: varchar('role', { length: 20 }).notNull().default('customer'), // 'customer' | 'admin'
   is_verified: boolean('is_verified').notNull().default(false),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table: any) => ({
   emailIdx: uniqueIndex('users_email_idx').on(table.email),
+  roleIdx: index('users_role_idx').on(table.role),
 }));
 
 // ==================== OTP VERIFICATIONS TABLE ====================
