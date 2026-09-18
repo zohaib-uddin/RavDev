@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import WarmChapterSection from '../components/home/WarmChapterSection';
 
 interface MainCategory {
   id: string;
@@ -61,6 +62,9 @@ export default function Home() {
           </motion.div>
         </div>
       </section>
+
+      {/* Warm Chapter I Section */}
+      <WarmChapterSection />
 
       {/* Main Categories */}
       <section className="py-16">

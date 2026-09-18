@@ -1,121 +1,162 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { useStore } from '../../store/useStore';
+import { motion } from 'framer-motion';
+
+interface WarmChapter {
+  id: string;
+  name: string;
+  slug: string;
+  image: string;
+  type: string;
+  display_order: number;
+  is_active: boolean;
+}
 
 export default function WarmChapterSection() {
-  const { warmChapters } = useStore();
+  const [chapters, setChapters] = useState<WarmChapter[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const cardsPerView = 4;
-  const totalSlides = Math.ceil(warmChapters.length / cardsPerView);
+  const [isPaused, setIsPaused] = useState(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % totalSlides);
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [totalSlides]);
+    fetchWarmChapters();
+  }, []);
 
-  const nextSlide = () => {
-    setCurrentIndex((prev) => (prev + 1) % totalSlides);
+  const fetchWarmChapters = async () => {
+    try {
+      const response = await fetch('http://localhost:3001/api/warm-chapters');
+      const data = await response.json();
+      setChapters(data);
+    } catch (error) {
+      console.error('Error fetching warm chapters:', error);
+    }
   };
 
-  const prevSlide = () => {
-    setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
-  };
+  // Auto-scroll logic
+  useEffect(() => {
+    if (chapters.length === 0 || isPaused) return;
 
-  const goToSlide = (index: number) => {
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % chapters.length);
+    }, 4000); // 4 seconds
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [chapters.length, isPaused]);
+
+  // Pause on tab visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setIsPaused(true);
+      } else {
+        setIsPaused(false);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []);
+
+  const handleDotClick = (index: number) => {
     setCurrentIndex(index);
   };
 
-  if (warmChapters.length === 0) return null;
+  if (chapters.length === 0) {
+    return (
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 text-center">
+          <p className="text-gray-500">Loading collections...</p>
+        </div>
+      </section>
+    );
+  }
 
-  const currentCards = warmChapters.slice(
-    currentIndex * cardsPerView,
-    (currentIndex * cardsPerView) + cardsPerView
-  );
+  // Calculate visible cards (4 cards visible at a time)
+  const visibleCards = [];
+  for (let i = 0; i < 4; i++) {
+    const index = (currentIndex + i) % chapters.length;
+    visibleCards.push(chapters[index]);
+  }
 
   return (
-    <section className="py-16 bg-white">
+    <section className="py-20 bg-white">
       <div className="max-w-7xl mx-auto px-4">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-4xl md:text-5xl font-black mb-3">WARM CHAPTER ONE</h2>
-          <p className="text-xl text-gray-600">New Edit</p>
-        </motion.div>
+        {/* Heading Section */}
+        <div className="text-center mb-12">
+          <h2 className="text-5xl md:text-6xl font-medium text-gray-900 uppercase tracking-wide mb-4">
+            WARM CHAPTER I
+          </h2>
+          <div className="w-64 h-0.5 bg-red-600 mx-auto mb-4"></div>
+          <p className="text-sm text-gray-600 uppercase tracking-wider">
+            NEW EDIT
+          </p>
+        </div>
 
         {/* Carousel Container */}
-        <div className="relative">
-          {/* Navigation Arrows */}
-          <button
-            onClick={prevSlide}
-            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-          >
-            <ChevronLeft size={24} />
-          </button>
-          <button
-            onClick={nextSlide}
-            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 z-10 w-12 h-12 bg-white rounded-full shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
-          >
-            <ChevronRight size={24} />
-          </button>
-
+        <div
+          className="relative overflow-hidden"
+          onMouseEnter={() => setIsPaused(true)}
+          onMouseLeave={() => setIsPaused(false)}
+        >
           {/* Cards Grid */}
-          <div className="overflow-hidden">
-            <motion.div
-              key={currentIndex}
-              initial={{ opacity: 0, x: 100 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -100 }}
-              transition={{ duration: 0.5 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-            >
-            {currentCards.map((chapter: any) => (
-              <Link
-                key={chapter.id}
-                to={`/collections/${chapter.slug}`}
-                className="group"
-              >                  <div className="relative aspect-[16/9] rounded-2xl overflow-hidden border-4 border-gray-200 shadow-xl transition-all duration-300 group-hover:border-black group-hover:shadow-2xl">
-                    <div className="absolute inset-0 overflow-hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+            {visibleCards.map((chapter, index) => (
+              <motion.div
+                key={`${chapter.id}-${currentIndex}-${index}`}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, ease: 'easeInOut', delay: index * 0.1 }}
+              >
+                <Link
+                  to={`/collections/${chapter.slug}`}
+                  className="block group"
+                >
+                  {/* Card */}
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer transition-shadow duration-300 hover:shadow-xl">
+                    {/* Image Container */}
+                    <div className="relative overflow-hidden" style={{ aspectRatio: '4/5' }}>
                       <img
-                        src={chapter.image_url}
-                        alt={chapter.title}
-                        className="w-full h-full object-cover transition-all duration-500 group-hover:scale-110 group-hover:rounded-[30%]"
+                        src={chapter.image}
+                        alt={chapter.name}
+                        className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-105 origin-left"
+                        loading={index < 4 ? 'eager' : 'lazy'}
                       />
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <h3 className="text-lg font-bold mb-1">{chapter.title}</h3>
-                      {chapter.subtitle && (
-                        <p className="text-sm">{chapter.subtitle}</p>
-                      )}
+
+                    {/* Title */}
+                    <div className="py-3 px-4 text-center">
+                      <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                        {chapter.name}
+                      </h3>
                     </div>
                   </div>
                 </Link>
-              ))}
-            </motion.div>
-          </div>
-
-          {/* Dots Indicator */}
-          <div className="flex justify-center gap-2 mt-8">
-            {Array.from({ length: totalSlides }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => goToSlide(index)}
-                className={`w-3 h-3 rounded-full transition-all duration-300 ${
-                  index === currentIndex
-                    ? 'bg-black w-8'
-                    : 'bg-gray-300 hover:bg-gray-400'
-                }`}
-              />
+              </motion.div>
             ))}
           </div>
+        </div>
+
+        {/* Dots Indicator */}
+        <div className="flex justify-center items-center gap-2 mt-10">
+          {chapters.map((_, index) => {
+            const isActive = index === currentIndex;
+            return (
+              <button
+                key={index}
+                onClick={() => handleDotClick(index)}
+                className={`transition-all duration-300 ease-in-out rounded-full ${
+                  isActive
+                    ? 'w-6 h-2 bg-gray-900'
+                    : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`Go to slide ${index + 1}`}
+              />
+            );
+          })}
         </div>
       </div>
     </section>
