@@ -356,6 +356,164 @@ app.get('/api/collections-in-focus', async (req, res) => {
   }
 });
 
+// ==================== SHOP ALL PRODUCTS API ====================
+
+// GET /api/products/shop-all - Get all products with filters
+app.get('/api/products/shop-all', async (req, res) => {
+  try {
+    const { sizes, colors, min_price, max_price, features, category, availability, sort } = req.query;
+    
+    let query = 'SELECT * FROM products WHERE 1=1';
+    const params: any[] = [];
+    
+    // Size filter
+    if (sizes && typeof sizes === 'string') {
+      const sizeArray = sizes.split(',');
+      query += ` AND sizes @> $${params.length + 1}`;
+      params.push(JSON.stringify(sizeArray));
+    }
+    
+    // Color filter
+    if (colors && typeof colors === 'string') {
+      const colorArray = colors.split(',');
+      query += ` AND colors @> $${params.length + 1}`;
+      params.push(JSON.stringify(colorArray));
+    }
+    
+    // Price range filter
+    if (min_price) {
+      query += ` AND actual_price >= $${params.length + 1}`;
+      params.push(min_price);
+    }
+    if (max_price) {
+      query += ` AND actual_price <= $${params.length + 1}`;
+      params.push(max_price);
+    }
+    
+    // Features filter
+    if (features && typeof features === 'string') {
+      const featureArray = features.split(',');
+      if (featureArray.includes('new_arrivals')) {
+        query += ` AND is_new_arrival = true`;
+      }
+      if (featureArray.includes('best_sellers')) {
+        query += ` AND is_best_seller = true`;
+      }
+      if (featureArray.includes('on_sale')) {
+        query += ` AND compare_price > actual_price`;
+      }
+    }
+    
+    // Category filter
+    if (category && category !== 'all') {
+      query += ` AND main_category_id IN (SELECT id FROM categories WHERE slug = $${params.length + 1})`;
+      params.push(category);
+    }
+    
+    // Availability filter
+    if (availability === 'in_stock') {
+      query += ` AND is_in_stock = true AND stock > 0`;
+    } else if (availability === 'out_of_stock') {
+      query += ` AND (is_in_stock = false OR stock = 0)`;
+    }
+    
+    // Sorting
+    switch (sort) {
+      case 'price_asc':
+        query += ` ORDER BY actual_price ASC`;
+        break;
+      case 'price_desc':
+        query += ` ORDER BY actual_price DESC`;
+        break;
+      case 'az':
+        query += ` ORDER BY name ASC`;
+        break;
+      case 'za':
+        query += ` ORDER BY name DESC`;
+        break;
+      case 'date_asc':
+        query += ` ORDER BY created_at ASC`;
+        break;
+      case 'date_desc':
+        query += ` ORDER BY created_at DESC`;
+        break;
+      case 'best_selling':
+        query += ` ORDER BY is_best_seller DESC, created_at DESC`;
+        break;
+      default:
+        query += ` ORDER BY is_featured DESC, created_at DESC`;
+    }
+    
+    const products = params.length > 0 ? await sql(query, params) : await sql(query);
+    
+    res.json({ products, total: products.length });
+  } catch (error: any) {
+    console.error('Get shop all products error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// GET /api/filters/available - Get available filters
+app.get('/api/filters/available', async (req, res) => {
+  try {
+    // Get all unique sizes
+    const sizesResult = await sql`
+      SELECT DISTINCT jsonb_array_elements_text(sizes) as size
+      FROM products
+      WHERE sizes IS NOT NULL AND jsonb_array_length(sizes) > 0
+      ORDER BY size
+    `;
+    const sizes = sizesResult.map((r: any) => r.size);
+    
+    // Get all unique colors with counts
+    const colorsResult = await sql`
+      SELECT 
+        jsonb_array_elements(colors)->>'name' as name,
+        jsonb_array_elements(colors)->>'hex' as hex,
+        COUNT(*) as count
+      FROM products
+      WHERE colors IS NOT NULL AND jsonb_array_length(colors) > 0
+      GROUP BY name, hex
+      ORDER BY count DESC
+    `;
+    
+    // Get price range
+    const priceRangeResult = await sql`
+      SELECT 
+        MIN(actual_price) as min,
+        MAX(actual_price) as max
+      FROM products
+    `;
+    
+    // Get all categories with product counts
+    const categoriesResult = await sql`
+      SELECT 
+        c.id,
+        c.name,
+        c.slug,
+        COUNT(p.id) as count
+      FROM categories c
+      LEFT JOIN products p ON p.main_category_id = c.id
+      WHERE c.is_active = true
+      GROUP BY c.id, c.name, c.slug
+      ORDER BY c.name
+    `;
+    
+    res.json({
+      sizes,
+      colors: colorsResult,
+      priceRange: {
+        min: parseFloat(priceRangeResult[0]?.min || '0'),
+        max: parseFloat(priceRangeResult[0]?.max || '10000')
+      },
+      categories: categoriesResult
+    });
+  } catch (error: any) {
+    console.error('Get available filters error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

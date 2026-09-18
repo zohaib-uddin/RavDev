@@ -1,472 +1,203 @@
-import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Eye, ShoppingBag } from 'lucide-react';
-import { useStore } from '../store/useStore';
+import { useState } from 'react';
+import { motion } from 'framer-motion';
+import { Eye, Minus, Plus, ShoppingCart } from 'lucide-react';
 
-interface ProductCardProps {
-  product: any;
-  index?: number;
+interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  actual_price: number;
+  compare_price?: number;
+  thumbnail_image: string;
+  images?: string[];
+  sizes?: string[];
+  colors?: Array<{ name: string; hex: string }>;
+  badge_type?: string;
+  badge_text?: string;
+  is_new_arrival?: boolean;
+  is_best_seller?: boolean;
+  is_featured?: boolean;
+  stock?: number;
 }
 
-export default function ProductCard({ product, index = 0 }: ProductCardProps) {
-  const { addToCart } = useStore();
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const [showSizeSelector, setShowSizeSelector] = useState(false);
-  const [selectedSize, setSelectedSize] = useState('');
-  const [showQuickView, setShowQuickView] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
+interface ProductCardProps {
+  product: Product;
+  onQuickView?: (product: Product) => void;
+  onAddToCart?: (product: Product, size: string, color: string, quantity: number) => void;
+}
 
-  // Get all images for the product
-  const images = product.images || [product.image];
-  const hasMultipleImages = images.length > 1;
+export default function ProductCard({ product, onQuickView, onAddToCart }: ProductCardProps) {
+  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || '');
+  const [selectedColor, setSelectedColor] = useState(product.colors?.[0]?.name || '');
+  const [quantity, setQuantity] = useState(1);
+  const [isQuickViewExpanded, setIsQuickViewExpanded] = useState(false);
 
-  // Handle hover enter
-  const handleMouseEnter = () => {
-    setIsHovered(true);
-    if (hasMultipleImages) {
-      setCurrentImageIndex(1); // Show second image on hover
+  // Calculate discount percentage
+  const calculateDiscount = () => {
+    if (product.compare_price && product.actual_price) {
+      const discount = ((product.compare_price - product.actual_price) / product.compare_price) * 100;
+      return Math.round(discount);
     }
-    setShowSizeSelector(true);
+    return 0;
+  };
+
+  // Determine badge to show
+  const getBadge = () => {
+    // Priority: Admin badge > Auto-calculated discount
+    if (product.badge_text) {
+      return product.badge_text;
+    }
     
-    // Auto-select first size if available
-    if (product.sizes && product.sizes.length > 0 && !selectedSize) {
-      setSelectedSize(product.sizes[0]);
+    const discount = calculateDiscount();
+    if (discount > 0) {
+      return `${discount}% OFF`;
     }
-  };
-
-  // Handle hover leave
-  const handleMouseLeave = () => {
-    setIsHovered(false);
-    setCurrentImageIndex(0); // Back to first image
-    setShowSizeSelector(false);
-  };
-
-  // Navigate to next image
-  const nextImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev + 1) % images.length);
-  };
-
-  // Navigate to previous image
-  const prevImage = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setCurrentImageIndex((prev) => (prev - 1 + images.length) % images.length);
-  };
-
-  // Handle Add to Cart with flying animation
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!selectedSize) {
-      alert('Please select a size');
-      return;
-    }
-
-    // Get button position
-    const buttonRect = e.currentTarget.getBoundingClientRect();
     
-    // Get cart icon position
-    const cartIcon = document.querySelector('[data-cart-icon]');
-    const cartRect = cartIcon?.getBoundingClientRect();
+    return null;
+  };
 
-    if (cartRect) {
-      // Create flying element
-      const flyingElement = document.createElement('div');
-      flyingElement.style.position = 'fixed';
-      flyingElement.style.left = `${buttonRect.left + buttonRect.width / 2}px`;
-      flyingElement.style.top = `${buttonRect.top + buttonRect.height / 2}px`;
-      flyingElement.style.width = '60px';
-      flyingElement.style.height = '60px';
-      flyingElement.style.backgroundImage = `url(${images[currentImageIndex]})`;
-      flyingElement.style.backgroundSize = 'cover';
-      flyingElement.style.backgroundPosition = 'center';
-      flyingElement.style.borderRadius = '50%';
-      flyingElement.style.zIndex = '9999';
-      flyingElement.style.transition = 'all 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-      flyingElement.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
-      
-      document.body.appendChild(flyingElement);
+  const badge = getBadge();
 
-      // Animate to cart
-      setTimeout(() => {
-        flyingElement.style.left = `${cartRect.left + cartRect.width / 2}px`;
-        flyingElement.style.top = `${cartRect.top + cartRect.height / 2}px`;
-        flyingElement.style.width = '20px';
-        flyingElement.style.height = '20px';
-        flyingElement.style.opacity = '0.3';
-      }, 10);
+  const handleAddToCart = () => {
+    if (onAddToCart && selectedSize && selectedColor) {
+      onAddToCart(product, selectedSize, selectedColor, quantity);
+    }
+  };
 
-      // Remove after animation and add to cart
-      setTimeout(() => {
-        flyingElement.remove();
-        const firstColor = product.colors?.[0];
-        const colorName = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
-        addToCart(product, selectedSize, colorName);
-      }, 800);
+  const handleQuantityChange = (type: 'increment' | 'decrement') => {
+    if (type === 'increment') {
+      setQuantity(Math.min(quantity + 1, product.stock || 99));
     } else {
-      // Fallback if cart icon not found
-      const firstColor = product.colors?.[0];
-      const colorName = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
-      addToCart(product, selectedSize, colorName);
+      setQuantity(Math.max(quantity - 1, 1));
     }
-  };
-
-  // Handle Quick View
-  const handleQuickView = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowQuickView(true);
   };
 
   return (
-    <motion.div
-      ref={cardRef}
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ delay: index * 0.05 }}
-      className="group relative"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      {/* Product Image Container - 16:9 ratio */}
-      <Link to={`/products/${product.slug}`} className="block">
-        <div className="relative overflow-hidden rounded-xl aspect-[16/9] bg-gray-100 border-2 border-gray-200 group-hover:border-black transition-all duration-300">
-          {/* Product Image */}
-          <motion.img
-            src={images[currentImageIndex]}
-            alt={product.name}
-            className="w-full h-full object-cover"
-            initial={false}
+    <div className="group relative bg-white">
+      {/* Image Section - 9:16 aspect ratio */}
+      <div className="relative overflow-hidden" style={{ aspectRatio: '9/16' }}>
+        <img
+          src={product.thumbnail_image}
+          alt={product.name}
+          className="w-full h-full object-cover"
+          loading="lazy"
+        />
+
+        {/* Badge - Top Right with Pulse Animation */}
+        {badge && (
+          <motion.div
             animate={{
-              scale: isHovered ? 1.1 : 1,
-              borderRadius: isHovered ? '30% 30% 30% 30% / 30% 30% 30% 30%' : '0%',
+              scale: [1, 1.05, 1],
             }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-          />
-
-          {/* Badge with zoom effect */}
-          {(product.isNew || product.salePrice || product.badge) && (
-            <motion.div
-              className="absolute top-3 left-3"
-              animate={{
-                scale: isHovered ? [1, 1.2, 1] : 1,
-              }}
-              transition={{
-                duration: 0.6,
-                repeat: isHovered ? Infinity : 0,
-                repeatDelay: 0.5,
-              }}
-            >
-              {product.isNew && (
-                <span className="bg-black text-white text-[10px] font-bold px-3 py-1.5 rounded-full">
-                  NEW
-                </span>
-              )}
-              {product.salePrice && !product.isNew && (
-                <span className="bg-red-500 text-white text-[10px] font-bold px-3 py-1.5 rounded-full">
-                  SALE
-                </span>
-              )}
-              {product.badge && !product.isNew && !product.salePrice && (
-                <span className="bg-purple-600 text-white text-[10px] font-bold px-3 py-1.5 rounded-full">
-                  {product.badge}
-                </span>
-              )}
-            </motion.div>
-          )}
-
-          {/* Quick View Icon - Top Right */}
-          <motion.button
-            onClick={handleQuickView}
-            className="absolute top-3 right-3 p-2 bg-white rounded-full shadow-lg hover:bg-black hover:text-white transition-colors"
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ 
-              opacity: isHovered ? 1 : 0,
-              scale: isHovered ? 1 : 0.8,
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "easeInOut"
             }}
-            transition={{ duration: 0.3 }}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
+            className="absolute top-2 right-2 bg-red-600 text-white px-3 py-1.5 text-xs font-bold"
           >
-            <Eye size={18} />
-          </motion.button>
+            {badge}
+          </motion.div>
+        )}
 
-          {/* Image Navigation Arrows */}
-          {hasMultipleImages && isHovered && (
-            <>
-              <motion.button
-                onClick={prevImage}
-                className="absolute left-2 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg hover:bg-white transition-colors"
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <ChevronLeft size={20} />
-              </motion.button>
-              <motion.button
-                onClick={nextImage}
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-white/90 rounded-full shadow-lg hover:bg-white transition-colors"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3 }}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                <ChevronRight size={20} />
-              </motion.button>
-            </>
+        {/* Quick View Button - Center */}
+        <motion.button
+          onMouseEnter={() => setIsQuickViewExpanded(true)}
+          onMouseLeave={() => setIsQuickViewExpanded(false)}
+          onClick={() => onQuickView?.(product)}
+          animate={{
+            width: isQuickViewExpanded ? '160px' : '48px',
+          }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white border-2 border-black flex items-center justify-center gap-2 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          style={{ height: '48px', borderRadius: isQuickViewExpanded ? '24px' : '50%' }}
+        >
+          <Eye size={20} className="text-black flex-shrink-0" />
+          {isQuickViewExpanded && (
+            <span className="text-black text-sm font-medium whitespace-nowrap">
+              Quick View
+            </span>
           )}
+        </motion.button>
 
-          {/* Image Indicator Dots */}
-          {hasMultipleImages && (
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-              {images.map((_img: string, idx: number) => (
-                <div
-                  key={idx}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${
-                    idx === currentImageIndex ? 'bg-white w-4' : 'bg-white/50'
+        {/* Size Selector - Slide Up on Hover */}
+        {product.sizes && product.sizes.length > 0 && (
+          <motion.div
+            initial={{ y: '100%' }}
+            whileHover={{ y: 0 }}
+            className="absolute bottom-0 left-0 right-0 bg-white p-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          >
+            <p className="text-xs text-gray-600 mb-2">Select Size</p>
+            <div className="flex gap-2 flex-wrap">
+              {product.sizes.map((size) => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  className={`px-3 py-1.5 text-xs font-medium border transition-all ${
+                    selectedSize === size
+                      ? 'bg-black text-white border-black'
+                      : 'bg-white text-black border-gray-300 hover:border-black'
                   }`}
-                />
+                >
+                  {size}
+                </button>
               ))}
             </div>
-          )}
+          </motion.div>
+        )}
+      </div>
 
-          {/* Size Selector - Slides up from bottom */}
-          <AnimatePresence>
-            {showSizeSelector && product.sizes && product.sizes.length > 0 && (
-              <motion.div
-                initial={{ y: 100, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 100, opacity: 0 }}
-                transition={{ duration: 0.3, ease: 'easeOut' }}
-                className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-sm p-3 border-t"
-                onClick={(e) => e.preventDefault()}
-              >
-                <p className="text-xs font-medium mb-2 text-center">Select Size</p>
-                <div className="flex gap-2 justify-center flex-wrap">
-                  {product.sizes.map((size: string) => (
-                    <button
-                      key={size}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setSelectedSize(size);
-                      }}
-                      className={`px-3 py-1.5 text-xs font-medium rounded-lg border-2 transition-all ${
-                        selectedSize === size
-                          ? 'border-black bg-black text-white'
-                          : 'border-gray-300 hover:border-black'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {/* Add to Cart Button - Appears on hover */}
-          <AnimatePresence>
-            {isHovered && selectedSize && (
-              <motion.button
-                onClick={handleAddToCart}
-                initial={{ y: 100, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                exit={{ y: 100, opacity: 0 }}
-                transition={{ duration: 0.3, delay: 0.1 }}
-                className="absolute bottom-3 left-3 right-3 bg-black text-white py-2.5 rounded-lg font-medium text-sm flex items-center justify-center gap-2 hover:bg-gray-800 transition-colors shadow-lg"
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <ShoppingBag size={16} />
-                Add to Cart
-              </motion.button>
-            )}
-          </AnimatePresence>
+      {/* Quantity Selector - Below Image */}
+      <div className="flex items-center border border-gray-200 bg-white" style={{ height: '52px' }}>
+        <button
+          onClick={() => handleQuantityChange('decrement')}
+          disabled={quantity <= 1}
+          className="flex-1 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Minus size={16} />
+        </button>
+        <div className="flex-1 h-full flex items-center justify-center text-black font-medium border-x border-gray-200">
+          {quantity}
         </div>
-      </Link>
+        <button
+          onClick={() => handleQuantityChange('increment')}
+          disabled={quantity >= (product.stock || 99)}
+          className="flex-1 h-full flex items-center justify-center text-black hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <Plus size={16} />
+        </button>
+      </div>
+
+      {/* Add to Cart Button */}
+      <button
+        onClick={handleAddToCart}
+        disabled={!selectedSize || !selectedColor}
+        className="w-full bg-black text-white py-3.5 flex items-center justify-center gap-2 font-semibold text-sm hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
+        style={{ height: '52px' }}
+      >
+        <ShoppingCart size={18} />
+        ADD TO CART
+      </button>
 
       {/* Product Info */}
-      <div className="mt-3 px-1">
-        <Link to={`/products/${product.slug}`}>
-          <h3 className="text-sm font-normal text-gray-800 line-clamp-2 hover:text-black transition-colors">
-            {product.name}
-          </h3>
-        </Link>
-        <div className="flex items-center gap-2 mt-1.5">
-          {product.salePrice ? (
-            <>
-              <span className="text-sm font-bold text-black">
-                Rs.{product.salePrice.toLocaleString()}
-              </span>
-              <span className="text-xs text-gray-400 line-through">
-                Rs.{product.price?.toLocaleString()}
-              </span>
-            </>
-          ) : (
-            <span className="text-sm font-bold text-black">
-              Rs.{product.price?.toLocaleString()}
+      <div className="p-3 text-center">
+        {/* Product Name */}
+        <h3 className="text-sm font-medium text-black mb-2 line-clamp-2 uppercase">
+          {product.name}
+        </h3>
+
+        {/* Prices */}
+        <div className="flex items-center justify-center gap-2">
+          <span className="text-sm font-bold text-black">
+            Rs. {product.actual_price.toLocaleString()}
+          </span>
+          {product.compare_price && (
+            <span className="text-sm text-gray-500 line-through">
+              Rs. {product.compare_price.toLocaleString()}
             </span>
           )}
         </div>
       </div>
-
-      {/* Quick View Modal */}
-      <AnimatePresence>
-        {showQuickView && (
-          <QuickViewModal
-            product={product}
-            onClose={() => setShowQuickView(false)}
-          />
-        )}
-      </AnimatePresence>
-    </motion.div>
-  );
-}
-
-// Quick View Modal Component
-function QuickViewModal({ product, onClose }: { product: any; onClose: () => void }) {
-  const { addToCart } = useStore();
-  const [selectedSize, setSelectedSize] = useState(product.sizes?.[0] || '');
-  const firstColor = product.colors?.[0];
-  const initialColor = typeof firstColor === 'string' ? firstColor : firstColor?.name || 'Black';
-  const [selectedColor, setSelectedColor] = useState(initialColor);
-
-  const handleAddToCart = () => {
-    if (!selectedSize) {
-      alert('Please select a size');
-      return;
-    }
-    addToCart(product, selectedSize, selectedColor);
-    onClose();
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-        className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="grid md:grid-cols-2 gap-6 p-6">
-          {/* Product Image */}
-          <div className="aspect-square rounded-xl overflow-hidden bg-gray-100">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
-          </div>
-
-          {/* Product Details */}
-          <div className="flex flex-col">
-            <h2 className="text-2xl font-bold mb-2">{product.name}</h2>
-            
-            {/* Price */}
-            <div className="flex items-center gap-3 mb-4">
-              {product.salePrice ? (
-                <>
-                  <span className="text-2xl font-bold text-black">
-                    Rs.{product.salePrice.toLocaleString()}
-                  </span>
-                  <span className="text-lg text-gray-400 line-through">
-                    Rs.{product.price?.toLocaleString()}
-                  </span>
-                </>
-              ) : (
-                <span className="text-2xl font-bold text-black">
-                  Rs.{product.price?.toLocaleString()}
-                </span>
-              )}
-            </div>
-
-            {/* Description */}
-            <p className="text-gray-600 mb-6">{product.description}</p>
-
-            {/* Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (
-              <div className="mb-4">
-                <p className="text-sm font-medium mb-2">Size</p>
-                <div className="flex gap-2 flex-wrap">
-                  {product.sizes.map((size: string) => (
-                    <button
-                      key={size}
-                      onClick={() => setSelectedSize(size)}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-                        selectedSize === size
-                          ? 'border-black bg-black text-white'
-                          : 'border-gray-300 hover:border-black'
-                      }`}
-                    >
-                      {size}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Color Selection */}
-            {product.colors && product.colors.length > 0 && (
-              <div className="mb-6">
-                <p className="text-sm font-medium mb-2">Color</p>
-                <div className="flex gap-2 flex-wrap">
-                  {product.colors.map((color: any, idx: number) => {
-                    const colorName = typeof color === 'string' ? color : color.name;
-                    return (
-                      <button
-                        key={idx}
-                        onClick={() => setSelectedColor(colorName)}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg border-2 transition-all ${
-                        selectedColor === colorName
-                          ? 'border-black bg-black text-white'
-                          : 'border-gray-300 hover:border-black'
-                      }`}
-                    >
-                      {colorName}
-                    </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 mt-auto">
-              <button
-                onClick={handleAddToCart}
-                className="flex-1 bg-black text-white py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
-              >
-                <ShoppingBag size={18} />
-                Add to Cart
-              </button>
-              <Link
-                to={`/products/${product.slug}`}
-                onClick={onClose}
-                className="flex-1 border-2 border-black text-black py-3 rounded-lg font-medium hover:bg-black hover:text-white transition-colors text-center"
-              >
-                View Full Details
-              </Link>
-            </div>
-          </div>
-        </div>
-      </motion.div>
-    </motion.div>
+    </div>
   );
 }
