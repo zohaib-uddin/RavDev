@@ -329,6 +329,33 @@ app.get('/api/collections/:mainCategorySlug', async (req, res) => {
   }
 });
 
+// ==================== COLLECTIONS IN FOCUS API ====================
+
+// GET /api/collections-in-focus - Get featured categories for homepage section
+app.get('/api/collections-in-focus', async (req, res) => {
+  try {
+    const categories = await sql`
+      SELECT 
+        id,
+        name,
+        slug,
+        description,
+        thumbnail_image as image,
+        display_order_in_focus
+      FROM categories 
+      WHERE is_featured_in_focus = true 
+        AND is_active = true
+      ORDER BY display_order_in_focus ASC
+      LIMIT 4
+    `;
+    
+    res.json(categories);
+  } catch (error: any) {
+    console.error('Get collections in focus error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);

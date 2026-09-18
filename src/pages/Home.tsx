@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import WarmChapterSection from '../components/home/WarmChapterSection';
+import CollectionsInFocusSection from '../components/home/CollectionsInFocusSection';
 
 interface MainCategory {
   id: string;
@@ -65,6 +66,9 @@ export default function Home() {
 
       {/* Warm Chapter I Section */}
       <WarmChapterSection />
+
+      {/* Collections in Focus Section */}
+      <CollectionsInFocusSection />
 
       {/* Main Categories */}
       <section className="py-16">
