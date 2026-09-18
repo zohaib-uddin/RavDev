@@ -967,7 +967,21 @@ app.get('/api/cities', async (req, res) => {
   }
 });
 
+// Test database connection
+async function testDatabaseConnection() {
+  try {
+    const result = await sql`SELECT NOW()`;
+    console.log('✅ Database connected to NeonDB');
+    console.log(`📅 Database time: ${result[0].now}`);
+    return true;
+  } catch (error: any) {
+    console.error('❌ Database connection failed:', error.message);
+    return false;
+  }
+}
+
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
+  await testDatabaseConnection();
 });
