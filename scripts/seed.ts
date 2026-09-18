@@ -293,12 +293,109 @@ async function seed() {
     
     console.log('  ✓ Product counts updated');
 
+    // Step 6: Create 4 categories for Collections in Focus section
+    console.log('\n📦 Creating Collections in Focus categories...');
+    
+    const collectionsInFocus = [
+      { 
+        name: 'Graphic Co-Ord Sets', 
+        slug: 'graphic-co-ord-sets', 
+        description: 'Designed to deliver effortless coordination with premium comfort, refined silhouettes, and versatile style for every occasion.',
+        image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&h=1000&fit=crop',
+        display_order: 1
+      },
+      { 
+        name: 'Acid Wash Tees', 
+        slug: 'acid-wash-tees', 
+        description: 'Finished with authentic vintage washes, premium softness, and oversized fits that bring timeless character to every outfit.',
+        image: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800&h=1000&fit=crop',
+        display_order: 2
+      },
+      { 
+        name: 'Oversize Tees', 
+        slug: 'oversize-tees', 
+        description: 'Bold, comfortable, and effortlessly stylish. Our oversize tees are perfect for making a statement.',
+        image: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=800&h=1000&fit=crop',
+        display_order: 3
+      },
+      { 
+        name: 'Trackpants', 
+        slug: 'trackpants', 
+        description: 'Premium comfort meets street style. Relaxed fit trackpants for the ultimate urban look.',
+        image: 'https://images.unsplash.com/photo-1552902865-b72c031ac5ea?w=800&h=1000&fit=crop',
+        display_order: 4
+      }
+    ];
+
+    for (const collection of collectionsInFocus) {
+      await sql`
+        INSERT INTO categories (
+          name, 
+          slug, 
+          description, 
+          thumbnail_image,
+          is_featured_in_focus,
+          display_order_in_focus,
+          is_main_category,
+          is_active,
+          product_count
+        )
+        VALUES (
+          ${collection.name},
+          ${collection.slug},
+          ${collection.description},
+          ${collection.image},
+          true,
+          ${collection.display_order},
+          false,
+          true,
+          0
+        )
+        ON CONFLICT (slug) DO UPDATE
+        SET 
+          is_featured_in_focus = true,
+          display_order_in_focus = ${collection.display_order}
+      `;
+      console.log(`  ✓ Created collection: ${collection.name}`);
+    }
+
+    // Step 7: Create 1 more category (not featured) for testing max 4 validation
+    console.log('\n📦 Creating non-featured category for testing...');
+    
+    await sql`
+      INSERT INTO categories (
+        name, 
+        slug, 
+        description, 
+        thumbnail_image,
+        is_featured_in_focus,
+        display_order_in_focus,
+        is_main_category,
+        is_active,
+        product_count
+      )
+      VALUES (
+        'Shirts & Jackets',
+        'shirts-jackets',
+        'Contemporary shirts and jackets for every occasion.',
+        'https://images.unsplash.com/photo-1551028719-00167b16eac5?w=800&h=1000&fit=crop',
+        false,
+        NULL,
+        false,
+        true,
+        0
+      )
+      ON CONFLICT (slug) DO NOTHING
+    `;
+    console.log('  ✓ Created non-featured category: Shirts & Jackets');
+
     console.log('\n✅ Database seeding completed successfully!');
     console.log('\n📊 Summary:');
     console.log('   • Sub-categories: 3');
     console.log('   • Main categories: 1');
     console.log('   • Products: 15');
     console.log('   • Featured products: 8');
+    console.log('   • Collections in Focus: 4');
 
   } catch (error: any) {
     console.error('❌ Error seeding database:', error);

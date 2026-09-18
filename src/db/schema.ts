@@ -12,6 +12,8 @@ export const categories = pgTable('categories', {
   is_main_category: boolean('is_main_category').notNull().default(false),
   display_order: integer('display_order').notNull().default(0),
   product_count: integer('product_count').notNull().default(0), // Cached count for performance
+  is_featured_in_focus: boolean('is_featured_in_focus').notNull().default(false), // Collections in Focus section mein dikhana hai ya nahi
+  display_order_in_focus: integer('display_order_in_focus'), // Collections in Focus mein order (1-4)
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (table: any) => ({
@@ -19,6 +21,7 @@ export const categories = pgTable('categories', {
   parentIdx: index('categories_parent_idx').on(table.parent_id),
   isMainIdx: index('categories_is_main_idx').on(table.is_main_category),
   displayOrderIdx: index('categories_display_order_idx').on(table.display_order),
+  featuredInFocusIdx: index('categories_featured_in_focus_idx').on(table.is_featured_in_focus),
 }));
 
 // ==================== PRODUCTS TABLE ====================
