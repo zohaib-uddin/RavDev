@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Eye, Minus, Plus, ShoppingCart } from 'lucide-react';
+import { useCart } from '../context/CartContext';
+import { playAddToCartAnimation, shakeElement, bounceElement, wiggleElement } from '../utils/addToCartAnimation';
 
 interface Product {
   id: string;
@@ -31,6 +33,8 @@ export default function ProductCard({ product, onQuickView, onAddToCart }: Produ
   const [selectedColor, setSelectedColor] = useState(product.colors?.[0]?.name || '');
   const [quantity, setQuantity] = useState(1);
   const [isQuickViewExpanded, setIsQuickViewExpanded] = useState(false);
+  const addButtonRef = useRef<HTMLButtonElement>(null);
+  const { addToCart } = useCart();
 
   // Calculate discount percentage
   const calculateDiscount = () => {
@@ -58,9 +62,71 @@ export default function ProductCard({ product, onQuickView, onAddToCart }: Produ
 
   const badge = getBadge();
 
-  const handleAddToCart = () => {
-    if (onAddToCart && selectedSize && selectedColor) {
-      onAddToCart(product, selectedSize, selectedColor, quantity);
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    if (!selectedSize || !selectedColor) {
+      // Shake animation for validation error
+      if (addButtonRef.current) {
+        shakeElement(addButtonRef.current);
+      }
+      alert('Please select size and color');
+      return;
+    }
+
+    // Get cart icon element for animation target
+    const cartIcon = document.querySelector('[data-cart-icon]');
+    if (!cartIcon) {
+      // Fallback if cart icon not found
+      if (onAddToCart) {
+        onAddToCart(product, selectedSize, selectedColor, quantity);
+      }
+      return;
+    }
+
+    // Get color object
+    const colorObj = product.colors?.find(c => c.name === selectedColor) || { name: selectedColor, hex: '#000000' };
+
+    // Play animation
+    if (addButtonRef.current) {
+      await playAddToCartAnimation({
+        sourceElement: addButtonRef.current,
+        targetElement: cartIcon as HTMLElement,
+        product: {
+          id: product.id,
+          name: product.name,
+          slug: product.slug,
+          actual_price: product.actual_price,
+          thumbnail_image: product.thumbnail_image,
+        },
+        size: selectedSize,
+        color: colorObj,
+        quantity,
+        onComplete: () => {
+          // Add to cart context
+          const itemId = addToCart({
+            product: {
+              id: product.id,
+              name: product.name,
+              slug: product.slug,
+              actual_price: product.actual_price,
+              thumbnail_image: product.thumbnail_image,
+            },
+            size: selectedSize,
+            color: colorObj,
+            quantity,
+          });
+
+          // Animate cart icon
+          const cartIconElement = document.querySelector('[data-cart-icon]');
+          if (cartIconElement) {
+            wiggleElement(cartIconElement as HTMLElement);
+          }
+
+          // Call custom callback if provided
+          if (onAddToCart) {
+            onAddToCart(product, selectedSize, selectedColor, quantity);
+          }
+        },
+      });
     }
   };
 
@@ -170,6 +236,7 @@ export default function ProductCard({ product, onQuickView, onAddToCart }: Produ
 
       {/* Add to Cart Button */}
       <button
+        ref={addButtonRef}
         onClick={handleAddToCart}
         disabled={!selectedSize || !selectedColor}
         className="w-full bg-black text-white py-3.5 flex items-center justify-center gap-2 font-semibold text-sm hover:bg-gray-800 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
