@@ -2,13 +2,17 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { CartProvider } from './context/CartContext';
 import Navbar from './components/Navbar';
+import AnnouncementBar from './components/AnnouncementBar';
 import Footer from './components/Footer';
 import CartSidebar from './components/CartSidebar';
 import Home from './pages/Home';
 import CollectionsPage from './pages/CollectionsPage';
-import ProductDetail from './pages/ProductDetail';
+import ProductDetailPage from './pages/ProductDetailPage';
 import AdminPanel from './pages/AdminPanel';
+import AdminLogin from './pages/AdminLogin';
 import ShopAllPage from './pages/ShopAllPage';
+import CheckoutPage from './pages/CheckoutPage';
+import UserDashboard from './pages/UserDashboard';
 
 export default function App() {
   return (
@@ -16,17 +20,21 @@ export default function App() {
       <Router>
         <div className="min-h-screen flex flex-col">
           <Toaster position="top-right" />
+          <AnnouncementBar />
           <Navbar />
           <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/shop" element={<ShopAllPage />} />
-              <Route path="/collections/:mainCategorySlug" element={<CollectionsPage />} />
-              <Route path="/collections/:mainCategorySlug/:subCategorySlug" element={<CollectionsPage />} />
-              <Route path="/products/:productSlug" element={<ProductDetail />} />
-              <Route path="/admin" element={<AdminPanel />} />
-            </Routes>
-          </main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<ShopAllPage />} />
+            <Route path="/collections/:mainCategorySlug" element={<CollectionsPage />} />
+            <Route path="/collections/:mainCategorySlug/:subCategorySlug" element={<CollectionsPage />} />
+            <Route path="/products/:productSlug" element={<ProductDetailPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/dashboard/:tab" element={<UserDashboard />} />
+            <Route path="/admin/signin" element={<AdminLogin />} />
+            <Route path="/admin" element={<AdminPanel />} />
+          </Routes>          </main>
           <Footer />
           <CartSidebarWrapper />
         </div>

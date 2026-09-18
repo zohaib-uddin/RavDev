@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Ravenza</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 40px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #000000;
+      letter-spacing: -1px;
+    }
+    .welcome-text {
+      font-size: 24px;
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .content {
+      text-align: center;
+      line-height: 1.6;
+    }
+    .account-info {
+      background-color: #f9fafb;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 30px 0;
+      text-align: left;
+    }
+    .account-info-row {
+      margin-bottom: 10px;
+    }
+    .account-info-label {
+      color: #666666;
+      font-size: 14px;
+    }
+    .account-info-value {
+      color: #000000;
+      font-weight: bold;
+    }
+    .cta-button {
+      display: inline-block;
+      background-color: #000000;
+      color: #ffffff;
+      padding: 15px 40px;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .features {
+      margin: 40px 0;
+    }
+    .feature-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background-color: #f3f4f6;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eeeeee;
+    }
+    .footer-text {
+      font-size: 12px;
+      color: #999999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">RAVENZA</div>
+    </div>
+    
+    <h1 class="welcome-text">Welcome to Ravenza!</h1>
+    
+    <div class="content">
+      <p>Hi {{USER_NAME}},</p>
+      <p>Thank you for creating an account with us. We're excited to have you as part of the Ravenza family!</p>
+      
+      <div class="account-info">
+        <div class="account-info-row">
+          <span class="account-info-label">Email:</span>
+          <span class="account-info-value">{{USER_EMAIL}}</span>
+        </div>
+        <div class="account-info-row">
+          <span class="account-info-label">Account Created:</span>
+          <span class="account-info-value">{{CREATED_DATE}}</span>
+        </div>
+      </div>
+      
+      <p>Your account has been successfully created and verified. You can now:</p>
+      
+      <div class="features">
+        <div class="feature-item">
+          <div class="feature-icon">📦</div>
+          <div>
+            <strong>Track Your Orders</strong><br>
+            <span style="color: #666666; font-size: 14px;">View order history and track shipments</span>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">💾</div>
+          <div>
+            <strong>Save Addresses</strong><br>
+            <span style="color: #666666; font-size: 14px;">Quick checkout with saved addresses</span>
+          </div>
+        </div>
+        
+        <div class="feature-item">
+          <div class="feature-icon">❤️</div>
+          <div>
+            <strong>Wishlist</strong><br>
+            <span style="color: #666666; font-size: 14px;">Save your favorite items for later</span>
+          </div>
+        </div>
+      </div>
+      
+      <a href="https://ravenza.pk/dashboard" class="cta-button">Go to Dashboard</a>
+      
+      <p style="margin-top: 30px;">Start shopping now and discover our latest collections!</p>
+      <a href="https://ravenza.pk/shop" style="color: #000000; font-weight: bold;">Shop Now →</a>
+    </div>
+    
+    <div class="footer">
+      <p class="footer-text">
+        © 2024 Ravenza. All rights reserved.<br>
+        Pakistan's Emerging Unisex Clothing Brand<br>
+        <a href="https://ravenza.pk" style="color: #000000;">Visit our website</a>
+      </p>
+    </div>
+  </div>
+</body>
+</html>
