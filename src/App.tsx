@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import CollectionsPage from './pages/CollectionsPage';
 import ProductDetail from './pages/ProductDetail';
 import AdminPanel from './pages/AdminPanel';
+import ShopAllPage from './pages/ShopAllPage';
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
         <main className="flex-1">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<ShopAllPage />} />
             <Route path="/collections/:mainCategorySlug" element={<CollectionsPage />} />
             <Route path="/collections/:mainCategorySlug/:subCategorySlug" element={<CollectionsPage />} />
             <Route path="/products/:productSlug" element={<ProductDetail />} />

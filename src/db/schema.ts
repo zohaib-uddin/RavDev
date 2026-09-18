@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, text, boolean, integer, timestamp, index, uniqueIndex, AnyPgColumn } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, varchar, text, boolean, integer, numeric, jsonb, timestamp, index, uniqueIndex, AnyPgColumn } from 'drizzle-orm/pg-core';
 
 // ==================== CATEGORIES TABLE ====================
 export const categories = pgTable('categories', {
@@ -30,11 +30,31 @@ export const products = pgTable('products', {
   name: varchar('name', { length: 255 }).notNull(),
   slug: varchar('slug', { length: 255 }).notNull().unique(),
   description: text('description'),
-  price: varchar('price', { length: 20 }).notNull(),
+  actual_price: numeric('actual_price', { precision: 10, scale: 2 }).notNull(),
+  compare_price: numeric('compare_price', { precision: 10, scale: 2 }),
+  images: jsonb('images').default([]),
   thumbnail_image: varchar('thumbnail_image', { length: 500 }).notNull(),
   main_category_id: uuid('main_category_id').references((): AnyPgColumn => categories.id),
   sub_category_id: uuid('sub_category_id').references((): AnyPgColumn => categories.id),
-  is_featured: boolean('is_featured').notNull().default(false), // Mega menu mein dikhane ke liye
+  
+  // Variants
+  sizes: jsonb('sizes').default([]),
+  colors: jsonb('colors').default([]),
+  
+  // Badges
+  badge_type: varchar('badge_type', { length: 50 }), // "on_sale", "best_seller", "new_arrival", "featured"
+  badge_text: varchar('badge_text', { length: 100 }),
+  
+  // Flags
+  is_new_arrival: boolean('is_new_arrival').notNull().default(false),
+  is_best_seller: boolean('is_best_seller').notNull().default(false),
+  is_featured: boolean('is_featured').notNull().default(false),
+  is_in_stock: boolean('is_in_stock').notNull().default(true),
+  
+  // Inventory
+  stock: integer('stock').notNull().default(0),
+  sku: varchar('sku', { length: 100 }),
+  
   display_order: integer('display_order').notNull().default(0),
   created_at: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updated_at: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -43,4 +63,7 @@ export const products = pgTable('products', {
   mainCategoryIdx: index('products_main_category_idx').on(table.main_category_id),
   subCategoryIdx: index('products_sub_category_idx').on(table.sub_category_id),
   featuredIdx: index('products_featured_idx').on(table.is_featured),
+  newArrivalIdx: index('products_new_arrival_idx').on(table.is_new_arrival),
+  bestSellerIdx: index('products_best_seller_idx').on(table.is_best_seller),
+  inStockIdx: index('products_in_stock_idx').on(table.is_in_stock),
 }));
