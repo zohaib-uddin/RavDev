@@ -9,6 +9,8 @@ import CollectionsPage from './pages/CollectionsPage';
 import ProductDetailPage from './pages/ProductDetailPage';
 import AdminPanel from './pages/AdminPanel';
 import ShopAllPage from './pages/ShopAllPage';
+import CheckoutPage from './pages/CheckoutPage';
+import UserDashboard from './pages/UserDashboard';
 
 export default function App() {
   return (
@@ -18,15 +20,17 @@ export default function App() {
           <Toaster position="top-right" />
           <Navbar />
           <main className="flex-1">
-            <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/shop" element={<ShopAllPage />} />
-              <Route path="/collections/:mainCategorySlug" element={<CollectionsPage />} />
-              <Route path="/collections/:mainCategorySlug/:subCategorySlug" element={<CollectionsPage />} />
-              <Route path="/products/:productSlug" element={<ProductDetailPage />} />
-              <Route path="/admin" element={<AdminPanel />} />
-            </Routes>
-          </main>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/shop" element={<ShopAllPage />} />
+            <Route path="/collections/:mainCategorySlug" element={<CollectionsPage />} />
+            <Route path="/collections/:mainCategorySlug/:subCategorySlug" element={<CollectionsPage />} />
+            <Route path="/products/:productSlug" element={<ProductDetailPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
+            <Route path="/dashboard" element={<UserDashboard />} />
+            <Route path="/dashboard/:tab" element={<UserDashboard />} />
+            <Route path="/admin" element={<AdminPanel />} />
+          </Routes>          </main>
           <Footer />
           <CartSidebarWrapper />
         </div>

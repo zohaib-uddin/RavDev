@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Verification Code</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      padding: 40px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logo {
+      font-size: 32px;
+      font-weight: bold;
+      color: #000000;
+      letter-spacing: -1px;
+    }
+    .content {
+      text-align: center;
+    }
+    .greeting {
+      font-size: 18px;
+      color: #333333;
+      margin-bottom: 20px;
+    }
+    .otp-code {
+      font-size: 48px;
+      font-weight: bold;
+      color: #000000;
+      letter-spacing: 8px;
+      background-color: #f5f5f5;
+      padding: 20px;
+      margin: 30px 0;
+      border-radius: 8px;
+    }
+    .expiry {
+      font-size: 14px;
+      color: #666666;
+      margin-top: 20px;
+    }
+    .warning {
+      font-size: 12px;
+      color: #999999;
+      margin-top: 30px;
+      line-height: 1.6;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eeeeee;
+    }
+    .footer-text {
+      font-size: 12px;
+      color: #999999;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">RAVENZA</div>
+    </div>
+    
+    <div class="content">
+      <p class="greeting">Your Verification Code</p>
+      
+      <div class="otp-code">{{OTP_CODE}}</div>
+      
+      <p class="expiry">This code will expire in 10 minutes</p>
+      
+      <p class="warning">
+        If you didn't request this code, please ignore this email or contact support if you have concerns.
+      </p>
+    </div>
+    
+    <div class="footer">
+      <p class="footer-text">
+        © 2024 Ravenza. All rights reserved.<br>
+        Pakistan's Emerging Unisex Clothing Brand
+      </p>
+    </div>
+  </div>
+</body>
+</html>

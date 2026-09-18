@@ -514,6 +514,455 @@ app.get('/api/filters/available', async (req, res) => {
   }
 });
 
+// ==================== OTP SYSTEM ====================
+
+// Send OTP
+app.post('/api/send-otp', async (req, res) => {
+  try {
+    const { email, purpose = 'checkout' } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Generate 6-digit OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Set expiry time (10 minutes from now)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Store OTP in database
+    await sql`
+      INSERT INTO otp_verifications (email, otp_code, purpose, expires_at)
+      VALUES (${email}, ${otpCode}, ${purpose}, ${expiresAt})
+    `;
+
+    // TODO: Send email via WebScript/Nginx
+    // For now, log OTP for testing
+    console.log(`📧 OTP for ${email}: ${otpCode}`);
+
+    res.json({ 
+      success: true, 
+      message: 'OTP sent successfully',
+      otp: process.env.NODE_ENV === 'development' ? otpCode : undefined // Only in development
+    });
+  } catch (error: any) {
+    console.error('Send OTP error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Verify OTP
+app.post('/api/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    // Find valid OTP
+    const otpRecords = await sql`
+      SELECT * FROM otp_verifications
+      WHERE email = ${email}
+        AND otp_code = ${otp}
+        AND is_used = false
+        AND expires_at > NOW()
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (otpRecords.length === 0) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Mark OTP as used
+    await sql`
+      UPDATE otp_verifications
+      SET is_used = true
+      WHERE id = ${otpRecords[0].id}
+    `;
+
+    // Check if user exists, if not create account
+    const existingUser = await sql`
+      SELECT * FROM users WHERE email = ${email}
+    `;
+
+    let userId = existingUser[0]?.id;
+
+    if (!userId) {
+      // Auto-create user account
+      const newUser = await sql`
+        INSERT INTO users (email, name, is_verified)
+        VALUES (${email}, ${email.split('@')[0]}, true)
+        RETURNING id
+      `;
+      userId = newUser[0].id;
+    }
+
+    res.json({ 
+      success: true, 
+      message: 'OTP verified successfully',
+      userId
+    });
+  } catch (error: any) {
+    console.error('Verify OTP error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== ORDERS ====================
+
+// Create Order
+app.post('/api/orders', async (req, res) => {
+  try {
+    const orderData = req.body;
+    
+    // Generate order number
+    const orderNumber = `RVZ-${Date.now()}`;
+    const trackingId = `TRK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    // Find or create user
+    let userId = null;
+    const existingUser = await sql`
+      SELECT id FROM users WHERE email = ${orderData.customer_email}
+    `;
+    
+    if (existingUser.length > 0) {
+      userId = existingUser[0].id;
+    } else {
+      const newUser = await sql`
+        INSERT INTO users (email, name, phone, is_verified)
+        VALUES (${orderData.customer_email}, ${orderData.customer_name}, ${orderData.customer_phone}, true)
+        RETURNING id
+      `;
+      userId = newUser[0].id;
+    }
+
+    // Create order
+    const newOrder = await sql`
+      INSERT INTO orders (
+        order_number, tracking_id, user_id,
+        customer_email, customer_name, customer_phone,
+        shipping_name, shipping_phone, shipping_address_line_1, shipping_address_line_2,
+        shipping_city, shipping_postal_code, shipping_country,
+        billing_name, billing_phone, billing_address_line_1, billing_address_line_2,
+        billing_city, billing_postal_code, billing_country,
+        items, subtotal, shipping_method, shipping_cost, discount, coupon_code, total,
+        payment_method, payment_status, order_status, order_notes
+      ) VALUES (
+        ${orderNumber}, ${trackingId}, ${userId},
+        ${orderData.customer_email}, ${orderData.customer_name}, ${orderData.customer_phone},
+        ${orderData.shipping.name}, ${orderData.shipping.phone}, ${orderData.shipping.address_line_1},
+        ${orderData.shipping.address_line_2 || null}, ${orderData.shipping.city},
+        ${orderData.shipping.postal_code}, 'Pakistan',
+        ${orderData.billing.name}, ${orderData.billing.phone}, ${orderData.billing.address_line_1},
+        ${orderData.billing.address_line_2 || null}, ${orderData.billing.city},
+        ${orderData.billing.postal_code}, 'Pakistan',
+        ${JSON.stringify(orderData.items)}, ${orderData.subtotal}, ${orderData.shipping_method},
+        ${orderData.shipping_cost}, ${orderData.discount}, ${orderData.coupon_code || null},
+        ${orderData.total}, ${orderData.payment_method}, 'unpaid', 'pending', ${orderData.order_notes}
+      )
+      RETURNING *
+    `;
+
+    // Save address if requested
+    if (orderData.save_address && userId) {
+      await sql`
+        INSERT INTO addresses (
+          user_id, name, phone, address_line_1, address_line_2,
+          city, postal_code, country, is_default
+        ) VALUES (
+          ${userId}, ${orderData.shipping.name}, ${orderData.shipping.phone},
+          ${orderData.shipping.address_line_1}, ${orderData.shipping.address_line_2 || null},
+          ${orderData.shipping.city}, ${orderData.shipping.postal_code}, 'Pakistan', true
+        )
+      `;
+    }
+
+    // TODO: Send order confirmation email via WebScript
+
+    res.json({
+      success: true,
+      message: 'Order placed successfully',
+      order: newOrder[0]
+    });
+  } catch (error: any) {
+    console.error('Create order error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get User Orders
+app.get('/api/orders/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const orders = await sql`
+      SELECT * FROM orders
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `;
+
+    res.json(orders);
+  } catch (error: any) {
+    console.error('Get user orders error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get Order by ID
+app.get('/api/orders/:orderId', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    
+    const orders = await sql`
+      SELECT * FROM orders
+      WHERE id = ${orderId}
+    `;
+
+    if (orders.length === 0) {
+      return res.status(404).json({ message: 'Order not found' });
+    }
+
+    res.json(orders[0]);
+  } catch (error: any) {
+    console.error('Get order error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update Order Status (Admin)
+app.put('/api/orders/:orderId/status', async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const { order_status, payment_status } = req.body;
+    
+    const updatedOrder = await sql`
+      UPDATE orders
+      SET 
+        order_status = COALESCE(${order_status}, order_status),
+        payment_status = COALESCE(${payment_status}, payment_status),
+        updated_at = NOW()
+      WHERE id = ${orderId}
+      RETURNING *
+    `;
+
+    // TODO: Send status update email to customer
+
+    res.json(updatedOrder[0]);
+  } catch (error: any) {
+    console.error('Update order error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== ADDRESSES ====================
+
+// Get User Addresses
+app.get('/api/addresses/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const addresses = await sql`
+      SELECT * FROM addresses
+      WHERE user_id = ${userId}
+      ORDER BY is_default DESC, created_at DESC
+    `;
+
+    res.json(addresses);
+  } catch (error: any) {
+    console.error('Get addresses error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Save Address
+app.post('/api/addresses', async (req, res) => {
+  try {
+    const addressData = req.body;
+    
+    const newAddress = await sql`
+      INSERT INTO addresses (
+        user_id, name, phone, address_line_1, address_line_2,
+        city, postal_code, country, is_default
+      ) VALUES (
+        ${addressData.user_id}, ${addressData.name}, ${addressData.phone},
+        ${addressData.address_line_1}, ${addressData.address_line_2 || null},
+        ${addressData.city}, ${addressData.postal_code}, ${addressData.country || 'Pakistan'},
+        ${addressData.is_default || false}
+      )
+      RETURNING *
+    `;
+
+    res.json(newAddress[0]);
+  } catch (error: any) {
+    console.error('Save address error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update Address
+app.put('/api/addresses/:addressId', async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    const addressData = req.body;
+    
+    const updatedAddress = await sql`
+      UPDATE addresses
+      SET 
+        name = ${addressData.name},
+        phone = ${addressData.phone},
+        address_line_1 = ${addressData.address_line_1},
+        address_line_2 = ${addressData.address_line_2 || null},
+        city = ${addressData.city},
+        postal_code = ${addressData.postal_code},
+        is_default = ${addressData.is_default},
+        updated_at = NOW()
+      WHERE id = ${addressId}
+      RETURNING *
+    `;
+
+    res.json(updatedAddress[0]);
+  } catch (error: any) {
+    console.error('Update address error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Delete Address
+app.delete('/api/addresses/:addressId', async (req, res) => {
+  try {
+    const { addressId } = req.params;
+    
+    await sql`DELETE FROM addresses WHERE id = ${addressId}`;
+
+    res.json({ success: true, message: 'Address deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete address error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== WISHLIST ====================
+
+// Get User Wishlist
+app.get('/api/wishlist/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const wishlist = await sql`
+      SELECT w.*, p.name, p.slug, p.actual_price, p.thumbnail_image
+      FROM wishlist w
+      JOIN products p ON w.product_id = p.id
+      WHERE w.user_id = ${userId}
+      ORDER BY w.created_at DESC
+    `;
+
+    res.json(wishlist);
+  } catch (error: any) {
+    console.error('Get wishlist error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Add to Wishlist
+app.post('/api/wishlist', async (req, res) => {
+  try {
+    const { user_id, product_id } = req.body;
+    
+    const newItem = await sql`
+      INSERT INTO wishlist (user_id, product_id)
+      VALUES (${user_id}, ${product_id})
+      RETURNING *
+    `;
+
+    res.json(newItem[0]);
+  } catch (error: any) {
+    console.error('Add to wishlist error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Remove from Wishlist
+app.delete('/api/wishlist/:wishlistId', async (req, res) => {
+  try {
+    const { wishlistId } = req.params;
+    
+    await sql`DELETE FROM wishlist WHERE id = ${wishlistId}`;
+
+    res.json({ success: true, message: 'Removed from wishlist' });
+  } catch (error: any) {
+    console.error('Remove from wishlist error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== USER SETTINGS ====================
+
+// Get User Profile
+app.get('/api/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    const user = await sql`
+      SELECT id, email, name, phone, is_verified, created_at
+      FROM users
+      WHERE id = ${userId}
+    `;
+
+    if (user.length === 0) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user[0]);
+  } catch (error: any) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update User Profile
+app.put('/api/users/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const { name, phone } = req.body;
+    
+    const updatedUser = await sql`
+      UPDATE users
+      SET 
+        name = COALESCE(${name}, name),
+        phone = COALESCE(${phone}, phone),
+        updated_at = NOW()
+      WHERE id = ${userId}
+      RETURNING id, email, name, phone, is_verified, created_at
+    `;
+
+    res.json(updatedUser[0]);
+  } catch (error: any) {
+    console.error('Update user error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// ==================== CITIES ====================
+
+// Get All Cities
+app.get('/api/cities', async (req, res) => {
+  try {
+    const cities = await sql`
+      SELECT * FROM cities
+      WHERE is_active = true
+      ORDER BY name
+    `;
+
+    res.json(cities);
+  } catch (error: any) {
+    console.error('Get cities error:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
